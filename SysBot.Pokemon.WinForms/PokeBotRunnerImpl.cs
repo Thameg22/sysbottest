@@ -3,6 +3,7 @@ using SysBot.Pokemon.Discord;
 using SysBot.Pokemon.Twitch;
 using SysBot.Pokemon.WinForms;
 using SysBot.Pokemon.YouTube;
+using SysBot.Pokemon.Web;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -19,6 +20,7 @@ namespace SysBot.Pokemon
 
         private static TwitchBot? Twitch;
         private static YouTubeBot? YouTube;
+        private static WebBot? Web;
 
         protected override void AddIntegrations()
         {
@@ -30,6 +32,9 @@ namespace SysBot.Pokemon
 
             if (!string.IsNullOrWhiteSpace(Hub.Config.YouTube.ClientID))
                 AddYouTubeBot(Hub.Config.YouTube);
+
+            if (!string.IsNullOrWhiteSpace(Hub.Config.Web.URIEndpoint))
+                AddWebBot(Hub.Config.Web);
         }
 
         private void AddTwitchBot(TwitchSettings config)
@@ -63,6 +68,14 @@ namespace SysBot.Pokemon
 
             YouTube = new YouTubeBot(Hub.Config.YouTube, Hub);
             Hub.BotSync.BarrierReleasingActions.Add(() => YouTube.StartingDistribution(config.MessageStart));
+        }
+
+        private void AddWebBot(WebSettings config)
+        {
+            if (Web != null)
+                return; // already created
+
+            Web = new WebBot(Hub.Config.Web, Hub);
         }
 
         private void AddDiscordBot(string apiToken)

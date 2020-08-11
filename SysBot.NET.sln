@@ -23,6 +23,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SysBot.Pokemon.Z3", "SysBot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SysBot.Pokemon.YouTube", "SysBot.Pokemon.YouTube\SysBot.Pokemon.YouTube.csproj", "{958D8B0C-FF01-4BC3-84AF-8BCB80794B49}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SysBot.Pokemon.Web", "SysBot.Pokemon.Web\SysBot.Pokemon.Web.csproj", "{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -135,6 +137,18 @@ Global
 		{958D8B0C-FF01-4BC3-84AF-8BCB80794B49}.Release|x64.Build.0 = Release|Any CPU
 		{958D8B0C-FF01-4BC3-84AF-8BCB80794B49}.Release|x86.ActiveCfg = Release|Any CPU
 		{958D8B0C-FF01-4BC3-84AF-8BCB80794B49}.Release|x86.Build.0 = Release|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Debug|x64.Build.0 = Debug|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Debug|x86.Build.0 = Debug|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Release|x64.ActiveCfg = Release|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Release|x64.Build.0 = Release|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Release|x86.ActiveCfg = Release|Any CPU
+		{B2B85D4A-0682-4FD1-9496-5DC094B8AC2D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

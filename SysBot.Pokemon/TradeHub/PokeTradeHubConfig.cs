@@ -89,6 +89,10 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public YouTubeSettings YouTube { get; set; } = new YouTubeSettings();
 
+        [Category(Integration)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public WebSettings Web { get; set; } = new WebSettings();
+
 
         [Category(Integration), Description("Configure generation of assets for streaming.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]

@@ -11,5 +11,11 @@ namespace SysBot.Pokemon
 
         [Category(Network), Description("HTTP or HTTPS Endpoint")]
         public string URIEndpoint { get; set; } = string.Empty;
+
+        [Category(Network), Description("The Auth ID")]
+        public string AuthID { get; set; } = string.Empty;
+
+        [Category(Network), Description("The Auth Token or Password")]
+        public string AuthTokenOrString { get; set; } = string.Empty;
     }
 }

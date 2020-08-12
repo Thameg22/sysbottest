@@ -100,6 +100,7 @@ namespace SysBot.Pokemon
 
                 string tradetype = $" ({detail.Type})";
                 Log($"Starting next {type}{tradetype} Bot Trade. Getting data...");
+                await Task.Delay(5_000, token).ConfigureAwait(false); // hack number 301923 for getting web to work
                 Hub.Config.Stream.StartTrade(this, detail, Hub);
                 Hub.Queues.StartTrade(this, detail);
 
@@ -185,6 +186,7 @@ namespace SysBot.Pokemon
 
             var code = poke.Code;
             Log($"Entering Link Trade Code: {code:0000 0000}...");
+            poke.SendNotification(this, $"Entering Link Trade Code: {code:0000 0000}...");
             await EnterTradeCode(code, token).ConfigureAwait(false);
 
             // Wait for Barrier to trigger all bots simultaneously.

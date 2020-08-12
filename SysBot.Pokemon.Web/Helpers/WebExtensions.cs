@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace SysBot.Pokemon.Web
@@ -28,5 +27,23 @@ namespace SysBot.Pokemon.Web
             return Encoding.UTF8.GetString(bytes);
         }
 
+        public static bool TryStringBetweenStrings(this string str, string start, string end, out string processed)
+        {
+            processed = string.Empty;
+            try
+            {
+                int pFrom = str.IndexOf(start);
+                if (pFrom == -1)
+                    return false;
+                pFrom += start.Length;
+                int pTo = str.LastIndexOf(end);
+                if (pTo == -1)
+                    return false;
+
+                processed = str.Substring(pFrom, pTo - pFrom);
+                return true;
+            }
+            catch { return false; }
+        }
     }
 }

@@ -11,13 +11,18 @@ namespace SysBot.Pokemon.Web
     {
         private readonly PokeTradeHub<PK8> Hub;
         private TradeQueueInfo<PK8> Info => Hub.Queues.Info;
-        private readonly string URI = "http://berichan.net";
-        private readonly int Code = 0000_9162;
+
+        private readonly string URI;
+        private readonly string AuthID, AuthString;
+
+        private int Code = 0000_9162;
 
         public WebBot(WebSettings settings, PokeTradeHub<PK8> hub)
         {
             Hub = hub;
             URI = settings.URIEndpoint;
+            AuthID = settings.AuthID;
+            AuthString = settings.AuthTokenOrString;
             Task.Run(() => loopTrades());
         }
 
@@ -27,16 +32,18 @@ namespace SysBot.Pokemon.Web
             var pk = new PK8();
             while (true)
             {
-                var notifier = new WebTradeNotifier<PK8>(pk, trainer, Code, URI);
-                var detail = new PokeTradeDetail<PK8>(pk, trainer, notifier, PokeTradeType.Seed, Code);
-                var trade = new TradeEntry<PK8>(detail, 0ul, PokeRoutineType.SeedCheck, "");
+                if (Hub.Queues.GetQueue(PokeRoutineType.SeedCheck).Count == 0)
+                {
+                    var notifier = new WebTradeNotifier<PK8>(pk, trainer, Code, URI, AuthID, AuthString);
+                    var detail = new PokeTradeDetail<PK8>(pk, trainer, notifier, PokeTradeType.Seed, Code);
+                    var trade = new TradeEntry<PK8>(detail, 0ul, PokeRoutineType.SeedCheck, "");
 
-                Info.AddToTradeQueue(trade, 0ul, false);
+                    Info.AddToTradeQueue(trade, 0ul, false);
+                }
 
                 while (Hub.Queues.GetQueue(PokeRoutineType.SeedCheck).Count > 0)
                 {
                     await Task.Delay(1_000).ConfigureAwait(false);
-                    continue;
                 }
             }
         }

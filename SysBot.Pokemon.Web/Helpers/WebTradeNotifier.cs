@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace SysBot.Pokemon.Web
 {
@@ -14,22 +15,17 @@ namespace SysBot.Pokemon.Web
         private T Data { get; }
         private PokeTradeTrainerInfo Info { get; }
         private int Code { get; }
-        private string URI { get; }
-        private string AuthID { get; }
-        private string AuthString { get; }
+        private IWebNotify<T> WebNotify { get; }
         private T Result { get; set; }
         private string OtherTrainer { get; set; } = string.Empty;
 
-        public WebTradeNotifier(T data, PokeTradeTrainerInfo info, int code, string uri, string authID, string authStr)
+        public WebTradeNotifier(T data, PokeTradeTrainerInfo info, int code, IWebNotify<T> notifier)
         {
             Data = data;
             Info = info;
             Code = code;
-            URI = uri;
-            AuthID = authID;
-            AuthString = authStr;
-
-            LogUtil.LogText("Starting new trade.");
+            WebNotify = notifier;
+            Result = new T();
         }
 
         public Action<PokeRoutineExecutor>? OnFinish { private get; set; }
@@ -89,6 +85,14 @@ namespace SysBot.Pokemon.Web
         }
 
         private void NotifyServerOfState(WebTradeState state, params KeyValuePair<string, string>[] additionalParams)
+            =>WebNotify.NotifyServerOfState(state, additionalParams);
+
+        private void NotifyServerOfTradeInfo(SeedSearchResult r)
+            => WebNotify.NotifyServerOfSeedInfo(r, Result);
+
+
+
+        /*private void NotifyServerOfStateOld(WebTradeState state, params KeyValuePair<string, string>[] additionalParams)
         {
             var paramsToSend = new Dictionary<string, string>();
             paramsToSend.Add("wts", state.ToString().WebSafeBase64Encode());
@@ -97,7 +101,7 @@ namespace SysBot.Pokemon.Web
             NotifyServerEndpoint(paramsToSend.ToArray());
         }
 
-        private void NotifyServerOfTradeInfo(SeedSearchResult r)
+        private void NotifyServerOfTradeInfoOld(SeedSearchResult r)
         {
             try
             {
@@ -119,12 +123,11 @@ namespace SysBot.Pokemon.Web
                 var uriTry = encodeUriParams(URI, urlParams) + authToken;
 
                 var request = (HttpWebRequest)WebRequest.Create(uriTry);
-                request.Method = "HEAD";
-
-                var response = (HttpWebResponse)request.GetResponse();
-                var success = response.StatusCode == HttpStatusCode.OK;
+                request.Method = WebRequestMethods.Http.Head;
+                request.Timeout = 20000;
+                var response = request.GetResponse();
             }
-            catch { }
+            catch (Exception e){ LogUtil.LogText(e.Message); Environment.Exit(42069); }
         }
 
         private string encodeUriParams(string uriBase, params KeyValuePair<string, string>[] urlParams)
@@ -138,6 +141,6 @@ namespace SysBot.Pokemon.Web
 
             // remove trailing &
             return uriBase.Remove(uriBase.Length - 1, 1);
-        }
+        }*/
     }
 }

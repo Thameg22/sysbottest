@@ -1,4 +1,5 @@
-﻿using PKHeX.Core;
+﻿using NLog.Fluent;
+using PKHeX.Core;
 using SysBot.Base;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,9 @@ namespace SysBot.Pokemon.Web
         private readonly string URI;
         private readonly string AuthID, AuthString;
 
-        private int Code = 0000_9162;
+        private readonly IWebNotify<PK8> WebNotifierInstance;
+
+        private int Code = 0000_7477;
 
         public WebBot(WebSettings settings, PokeTradeHub<PK8> hub)
         {
@@ -23,6 +26,7 @@ namespace SysBot.Pokemon.Web
             URI = settings.URIEndpoint;
             AuthID = settings.AuthID;
             AuthString = settings.AuthTokenOrString;
+            WebNotifierInstance = new WebQueryNotify<PK8>(AuthID, AuthString, URI);
             Task.Run(() => loopTrades());
         }
 
@@ -34,7 +38,7 @@ namespace SysBot.Pokemon.Web
             {
                 if (Hub.Queues.GetQueue(PokeRoutineType.SeedCheck).Count == 0)
                 {
-                    var notifier = new WebTradeNotifier<PK8>(pk, trainer, Code, URI, AuthID, AuthString);
+                    var notifier = new WebTradeNotifier<PK8>(pk, trainer, Code, WebNotifierInstance);
                     var detail = new PokeTradeDetail<PK8>(pk, trainer, notifier, PokeTradeType.Seed, Code);
                     var trade = new TradeEntry<PK8>(detail, 0ul, PokeRoutineType.SeedCheck, "");
 

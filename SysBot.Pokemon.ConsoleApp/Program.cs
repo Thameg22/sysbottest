@@ -8,7 +8,7 @@ namespace SysBot.Pokemon.ConsoleApp
 {
     public static class Program
     {
-        private const string ConfigPath = "config.json";
+        private static string ConfigPath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), @"config.json"); // needed for systemctl service on linux for mono to find config.json 
 
         private static void Main(string[] args)
         {

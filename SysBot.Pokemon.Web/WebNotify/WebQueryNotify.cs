@@ -41,6 +41,17 @@ namespace SysBot.Pokemon.Web
                 paramsToSend.Add("seed", r.Seed.ToString("X16").WebSafeBase64Encode());
                 paramsToSend.Add("ot", Result.OT_Name.WebSafeBase64Encode());
                 paramsToSend.Add("dex", Result.Species.ToString().WebSafeBase64Encode());
+
+                var shinyState = "None";
+                if (r.Type == Z3SearchResult.Success)
+                {
+                    SeedSearchUtil.GetShinyFrames(r.Seed, out var frames, out var type, out var ivs, r.Mode);
+                    if (frames != null && type != null)
+                        if (frames.Length > 0 && type.Length > 0)
+                            shinyState = $"{frames[0]}@{type[0]}";
+                }
+                paramsToSend.Add("shiny", shinyState.WebSafeBase64Encode());
+
                 NotifyServerEndpoint(paramsToSend.ToArray());
             }
             catch { }
@@ -62,6 +73,7 @@ namespace SysBot.Pokemon.Web
                 using (var response = request.GetResponse())
                 {
                     //dispose
+                    Console.WriteLine("Connected to endpoint: " + response.ResponseUri.ToString());
                 }
             }
             catch (Exception e) { request.Abort(); LogUtil.LogText(e.Message); Environment.Exit(42069); }

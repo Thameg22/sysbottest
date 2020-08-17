@@ -18,7 +18,7 @@ namespace SysBot.Pokemon.Web
 
         private readonly IWebNotify<PK8> WebNotifierInstance;
 
-        private int Code = 0000_7477;
+        private const int Code = 1111_7477; // while I test
 
         public WebBot(WebSettings settings, PokeTradeHub<PK8> hub)
         {

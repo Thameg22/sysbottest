@@ -100,7 +100,7 @@ namespace SysBot.Pokemon
 
                 string tradetype = $" ({detail.Type})";
                 Log($"Starting next {type}{tradetype} Bot Trade. Getting data...");
-                await Task.Delay(5_000, token).ConfigureAwait(false); // hack number 301923 for getting web to work
+                await Task.Delay(6_500, token).ConfigureAwait(false); // hack number 301923 for getting web to work
                 Hub.Config.Stream.StartTrade(this, detail, Hub);
                 Hub.Queues.StartTrade(this, detail);
 

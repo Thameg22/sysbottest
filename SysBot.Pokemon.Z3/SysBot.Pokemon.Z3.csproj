@@ -21,6 +21,10 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="runtimes\**" CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+
   <Choose>
     
     <When Condition=" '$(Platform)' == 'x64' OR $(RuntimeIdentifier.EndsWith('x64')) ">

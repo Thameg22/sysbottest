@@ -26,7 +26,7 @@ namespace SysBot.Pokemon.Web
             URI = settings.URIEndpoint;
             AuthID = settings.AuthID;
             AuthString = settings.AuthTokenOrString;
-            WebNotifierInstance = new WebQueryNotify<PK8>(AuthID, AuthString, URI);
+            WebNotifierInstance = new SignalRNotify<PK8>(AuthID, AuthString, URI);
             Task.Run(() => loopTrades());
         }
 

@@ -73,8 +73,14 @@ namespace SysBot.Pokemon.Web
                 {
                     SeedSearchUtil.GetShinyFrames(r.Seed, out var frames, out var type, out var ivs, r.Mode);
                     if (frames != null && type != null)
+                    {
                         if (frames.Length > 0 && type.Length > 0)
-                            shinyState = $"{frames[0]}@{type[0]}";
+                            shinyState = "";
+
+                        for (int i = 0; i < frames.Length; ++i)
+                            if (type[i] != 0)
+                                shinyState += $"{frames[i]}@{type[i]}@";
+                    }
                 }
                 paramsToSend.Add("shiny", shinyState.WebSafeBase64Encode());
 

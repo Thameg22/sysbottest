@@ -259,7 +259,11 @@ namespace SysBot.Pokemon
                 return PokeTradeResult.TrainerTooSlow;
             }
 
-            if (poke.Type == PokeTradeType.Seed)
+            bool itemReq = false;
+            if (poke.Type == PokeTradeType.Seed && IsPrimeHour(DateTime.UtcNow.Hour))
+                itemReq = CheckItemRequest(ref pk, poke);
+
+            if (poke.Type == PokeTradeType.Seed && !itemReq)
             {
                 // Immediately exit, we aren't trading anything.
                 return await EndSeedCheckTradeAsync(poke, pk, token).ConfigureAwait(false);
@@ -283,7 +287,7 @@ namespace SysBot.Pokemon
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
             }
-            else if (poke.Type == PokeTradeType.Clone)
+            else if (poke.Type == PokeTradeType.Clone || itemReq)
             {
                 // Inject the shown Pokémon.
                 var clone = (PK8)pk.Clone();
@@ -301,6 +305,8 @@ namespace SysBot.Pokemon
                     var report = la.Report();
                     Log(report);
                     poke.SendNotification(this, "This Pokémon is not legal per PKHeX's legality checks. I am forbidden from cloning this. Exiting trade.");
+                    if (itemReq)
+                        poke.SendNotification(this, "Item request or your Pokémon is invalid");
                     poke.SendNotification(this, report);
 
                     await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
@@ -335,6 +341,9 @@ namespace SysBot.Pokemon
                 await SetBoxPokemon(clone, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
                 pkm = clone;
 
+                if (itemReq)
+                    poke.SendNotification(this, "Item request successful! Enjoy your item & Pokémon!");
+
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
             }
@@ -348,7 +357,7 @@ namespace SysBot.Pokemon
             {
                 await Click(A, 3_000, token).ConfigureAwait(false);
                 delay_count++;
-                if (delay_count >= 50)
+                if (delay_count >= 20)
                     break;
                 if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false)) // In case we are in a Trade Evolution/PokeDex Entry and the Trade Partner quits we land on the Overworld
                     break;
@@ -395,6 +404,25 @@ namespace SysBot.Pokemon
             }
 
             return PokeTradeResult.Success;
+        }
+
+        private bool CheckItemRequest(ref PK8 pk, PokeTradeDetail<PK8> detail)
+        {
+            if (!pk.Nickname.StartsWith("!"))
+                return false;
+            var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
+            GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
+            var items = (string[])strings.GetItemStrings(8, GameVersion.SWSH);
+            int item = Array.FindIndex(items, z => z.Replace(" ", string.Empty).StartsWith(itemLookup, StringComparison.OrdinalIgnoreCase));
+            if (item < 0)
+            {
+                detail.SendNotification(this, "Item request was invalid. Check spelling & gen.");
+                return false;
+            }
+
+            pk.HeldItem = item;
+            pk.ClearNickname();
+            return true;
         }
 
         private async Task<PokeTradeResult> ProcessDumpTradeAsync(PokeTradeDetail<PK8> detail, CancellationToken token)
@@ -663,5 +691,8 @@ namespace SysBot.Pokemon
             var oldEC = await Connection.ReadBytesAsync(offset, 4, token).ConfigureAwait(false);
             return await ReadUntilChanged(offset, oldEC, waitms, waitInterval, false, token).ConfigureAwait(false);
         }
+
+        readonly System.Collections.Generic.List<int> UsableHours = new System.Collections.Generic.List<int>(new int[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23 });
+        bool IsPrimeHour(int number) => UsableHours.Contains(number);
     }
 }

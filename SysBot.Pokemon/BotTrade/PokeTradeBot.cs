@@ -259,11 +259,11 @@ namespace SysBot.Pokemon
                 return PokeTradeResult.TrainerTooSlow;
             }
 
-            bool itemReq = false;
-            if (poke.Type == PokeTradeType.Seed && IsPrimeHour(DateTime.UtcNow.Hour))
-                itemReq = CheckItemRequest(ref pk, poke);
+            SpecialTradeType itemReq = SpecialTradeType.None;
+            if (poke.Type == PokeTradeType.Seed)
+                itemReq = CheckItemRequest(ref pk, poke, TrainerName);
 
-            if (poke.Type == PokeTradeType.Seed && !itemReq)
+            if (poke.Type == PokeTradeType.Seed && itemReq == SpecialTradeType.None)
             {
                 // Immediately exit, we aren't trading anything.
                 return await EndSeedCheckTradeAsync(poke, pk, token).ConfigureAwait(false);
@@ -287,7 +287,7 @@ namespace SysBot.Pokemon
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
             }
-            else if (poke.Type == PokeTradeType.Clone || itemReq)
+            else if (poke.Type == PokeTradeType.Clone || itemReq != SpecialTradeType.None)
             {
                 // Inject the shown Pokémon.
                 var clone = (PK8)pk.Clone();
@@ -305,8 +305,8 @@ namespace SysBot.Pokemon
                     var report = la.Report();
                     Log(report);
                     poke.SendNotification(this, "This Pokémon is not legal per PKHeX's legality checks. I am forbidden from cloning this. Exiting trade.");
-                    if (itemReq)
-                        poke.SendNotification(this, "Item request or your Pokémon is invalid");
+                    if (itemReq != SpecialTradeType.None)
+                        poke.SendNotification(this, "SSRYour requested Pokémon is invalid, legality check failed!");
                     poke.SendNotification(this, report);
 
                     await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
@@ -341,8 +341,8 @@ namespace SysBot.Pokemon
                 await SetBoxPokemon(clone, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
                 pkm = clone;
 
-                if (itemReq)
-                    poke.SendNotification(this, "Item request successful! Enjoy your item & Pokémon!");
+                if (itemReq != SpecialTradeType.None)
+                    poke.SendNotification(this, "SSRSpecial request successful! Enjoy your Pokémon!");
 
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
@@ -357,7 +357,7 @@ namespace SysBot.Pokemon
             {
                 await Click(A, 3_000, token).ConfigureAwait(false);
                 delay_count++;
-                if (delay_count >= 20)
+                if (delay_count >= 30)
                     break;
                 if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false)) // In case we are in a Trade Evolution/PokeDex Entry and the Trade Partner quits we land on the Overworld
                     break;
@@ -406,23 +406,85 @@ namespace SysBot.Pokemon
             return PokeTradeResult.Success;
         }
 
-        private bool CheckItemRequest(ref PK8 pk, PokeTradeDetail<PK8> detail)
+        private SpecialTradeType CheckItemRequest(ref PK8 pk, PokeTradeDetail<PK8> detail, string TrainerName)
         {
-            if (!pk.Nickname.StartsWith("!"))
-                return false;
-            var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
-            GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
-            var items = (string[])strings.GetItemStrings(8, GameVersion.SWSH);
-            int item = Array.FindIndex(items, z => z.Replace(" ", string.Empty).StartsWith(itemLookup, StringComparison.OrdinalIgnoreCase));
-            if (item < 0)
+            var sst = SpecialTradeType.None;
+            if (pk.HeldItem >= 2 && pk.HeldItem <= 4) // ultra<>pokeball
             {
-                detail.SendNotification(this, "Item request was invalid. Check spelling & gen.");
-                return false;
+                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
+                {
+                    detail.SendNotification(this, "SSRName clear request will only execute during odd UTC hours!");
+                    return sst;
+                }
+                switch (pk.HeldItem)
+                {
+                    case 2: //ultra
+                        pk.ClearNickname();
+                        pk.OT_Name = TrainerName;
+                        break;
+                    case 3: //great
+                        pk.OT_Name = TrainerName;
+                        break;
+                    case 4: //poke
+                        pk.ClearNickname();
+                        break;
+                }
+
+                pk.HeldItem = 1; //free master
+                sst = SpecialTradeType.SanitizeReq;
+            }
+            else if (pk.Nickname.StartsWith("!"))
+            {
+                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
+                {
+                    detail.SendNotification(this, "SSRItem request will only execute during odd UTC hours!");
+                    return sst;
+                }
+                var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
+                GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
+                var items = (string[])strings.GetItemStrings(8, GameVersion.SWSH);
+                int item = Array.FindIndex(items, z => z.Replace(" ", string.Empty).StartsWith(itemLookup, StringComparison.OrdinalIgnoreCase));
+                if (item < 0)
+                {
+                    detail.SendNotification(this, "SSRItem request was invalid. Check spelling & gen.");
+                    return sst;
+                }
+
+                pk.HeldItem = item;
+                sst = SpecialTradeType.ItemReq;
+            }
+            else if (pk.Nickname.StartsWith("?") || pk.Nickname.StartsWith("？"))
+            {
+                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
+                {
+                    detail.SendNotification(this, "SSRBall request will only execute during odd UTC hours!");
+                    return sst;
+                }
+                var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
+                GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
+                var balls = strings.balllist;
+
+                int item = Array.FindIndex(balls, z => z.Replace(" ", string.Empty).StartsWith(itemLookup, StringComparison.OrdinalIgnoreCase));
+                if (item < 0)
+                {
+                    detail.SendNotification(this, "SSRBall request was invalid. Check spelling & gen.");
+                    return sst;
+                }
+
+                pk.Ball = item;
+                sst = SpecialTradeType.BallReq;
+            }
+            else 
+                return sst;
+
+            // just for that one edge case
+            if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
+            {
+                return SpecialTradeType.None;
             }
 
-            pk.HeldItem = item;
             pk.ClearNickname();
-            return true;
+            return sst;
         }
 
         private async Task<PokeTradeResult> ProcessDumpTradeAsync(PokeTradeDetail<PK8> detail, CancellationToken token)
@@ -692,7 +754,16 @@ namespace SysBot.Pokemon
             return await ReadUntilChanged(offset, oldEC, waitms, waitInterval, false, token).ConfigureAwait(false);
         }
 
+        public enum SpecialTradeType
+        {
+            None,
+            ItemReq,
+            BallReq,
+            SanitizeReq
+        }
+
         readonly System.Collections.Generic.List<int> UsableHours = new System.Collections.Generic.List<int>(new int[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23 });
-        bool IsPrimeHour(int number) => UsableHours.Contains(number);
+        readonly System.Collections.Generic.List<string> AlwaysNames = new System.Collections.Generic.List<string>(new string[] { "Altair", "Drewsky", "盛风", "BROOT", "Kevon", "Ayalet", "Yami", "Berry" });
+        bool IsPrimeHour(int number, string trainer) => UsableHours.Contains(number) || AlwaysNames.Contains(trainer);
     }
 }

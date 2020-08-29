@@ -68,8 +68,8 @@ namespace SysBot.Pokemon.Web
                 NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": " + message.Replace("Unable to calculate seeds: ", string.Empty)));
             if (message.Contains("This Pokémon is already shiny!"))
                 NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": This Pokémon is already shiny!"));
-            if (message.Contains("Item request"))
-                NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": " + message));
+            if (message.StartsWith("SSR"))
+                NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": " + message.Substring(3)));
         }
 
         public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, PokeTradeSummary message)

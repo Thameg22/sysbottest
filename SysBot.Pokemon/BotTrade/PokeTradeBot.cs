@@ -2,6 +2,8 @@
 using PKHeX.Core.Searching;
 using SysBot.Base;
 using System;
+using System.Collections.Generic;
+using System.Security.Permissions;
 using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
@@ -255,13 +257,18 @@ namespace SysBot.Pokemon
             var oldEC = await Connection.ReadBytesAsync(LinkTradePartnerPokemonOffset, 4, token).ConfigureAwait(false);
             if (pk == null)
             {
-                await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
+                await ExitTrade(Hub.Config, false, token).ConfigureAwait(false);
                 return PokeTradeResult.TrainerTooSlow;
             }
 
             SpecialTradeType itemReq = SpecialTradeType.None;
             if (poke.Type == PokeTradeType.Seed)
                 itemReq = CheckItemRequest(ref pk, poke, TrainerName);
+            if (itemReq == SpecialTradeType.FailReturn)
+            {
+                await ExitTrade(Hub.Config, false, token).ConfigureAwait(false);
+                return PokeTradeResult.IllegalTrade;
+            }
 
             if (poke.Type == PokeTradeType.Seed && itemReq == SpecialTradeType.None)
             {
@@ -306,7 +313,7 @@ namespace SysBot.Pokemon
                     Log(report);
                     poke.SendNotification(this, "This Pokémon is not legal per PKHeX's legality checks. I am forbidden from cloning this. Exiting trade.");
                     if (itemReq != SpecialTradeType.None)
-                        poke.SendNotification(this, "SSRYour requested Pokémon is invalid, legality check failed!");
+                        poke.SendNotification(this, "SSRYour request is invalid, legality check failed!");
                     poke.SendNotification(this, report);
 
                     await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
@@ -342,7 +349,7 @@ namespace SysBot.Pokemon
                 pkm = clone;
 
                 if (itemReq != SpecialTradeType.None)
-                    poke.SendNotification(this, "SSRSpecial request successful! Enjoy your Pokémon!");
+                    poke.SendNotification(this, "SSRSpecial request successful!");
 
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
@@ -409,6 +416,7 @@ namespace SysBot.Pokemon
         private SpecialTradeType CheckItemRequest(ref PK8 pk, PokeTradeDetail<PK8> detail, string TrainerName)
         {
             var sst = SpecialTradeType.None;
+
             if (pk.HeldItem >= 2 && pk.HeldItem <= 4) // ultra<>pokeball
             {
                 if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
@@ -481,6 +489,24 @@ namespace SysBot.Pokemon
             if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
             {
                 return SpecialTradeType.None;
+            }
+
+            // success but prevent overuse which causes connection errors
+            if (DateTime.UtcNow.Hour != LastHour)
+            {
+                LastHour = DateTime.UtcNow.Hour;
+                UserListSpecialReqCount.Clear();
+            }
+            if (UserListSpecialReqCount.ContainsKey(TrainerName))
+                UserListSpecialReqCount[TrainerName] = UserListSpecialReqCount[TrainerName] + 1;
+            else
+                UserListSpecialReqCount.Add(TrainerName, 1);
+
+            if (UserListSpecialReqCount[TrainerName] >= 4)
+            {
+                Log($"Softbanned {TrainerName}.");
+                detail.SendNotification(this, $"SSRToo many special requests! Please wait until {(LastHour + 2)%24}:00 UTC.");
+                return SpecialTradeType.FailReturn;
             }
 
             pk.ClearNickname();
@@ -759,11 +785,14 @@ namespace SysBot.Pokemon
             None,
             ItemReq,
             BallReq,
-            SanitizeReq
+            SanitizeReq,
+            FailReturn
         }
 
         readonly System.Collections.Generic.List<int> UsableHours = new System.Collections.Generic.List<int>(new int[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23 });
         readonly System.Collections.Generic.List<string> AlwaysNames = new System.Collections.Generic.List<string>(new string[] { "Altair", "Drewsky", "盛风", "BROOT", "Kevon", "Ayalet", "Yami", "Berry" });
+        int LastHour = 0;
+        Dictionary<string, int> UserListSpecialReqCount = new Dictionary<string, int>();
         bool IsPrimeHour(int number, string trainer) => UsableHours.Contains(number) || AlwaysNames.Contains(trainer);
     }
 }

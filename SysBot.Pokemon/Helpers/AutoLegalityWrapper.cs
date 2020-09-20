@@ -24,7 +24,6 @@ namespace SysBot.Pokemon
                 EncounterEvent.RefreshMGDB(cfg.MGDBPath);
             InitializeTrainerDatabase(cfg);
             InitializeSettings(cfg);
-            // Legalizer.AllowBruteForce = false;
         }
 
         private static void InitializeSettings(LegalitySettings cfg)
@@ -33,7 +32,6 @@ namespace SysBot.Pokemon
             APILegality.SetMatchingBalls = cfg.SetMatchingBalls;
             APILegality.ForceSpecifiedBall = cfg.ForceSpecifiedBall;
             APILegality.UseXOROSHIRO = cfg.UseXOROSHIRO;
-            Legalizer.AllowBruteForce = false;
             Legalizer.EnableEasterEggs = cfg.EnableEasterEggs;
         }
 
@@ -77,10 +75,7 @@ namespace SysBot.Pokemon
             Util.SetLocalization(typeof(LegalityCheckStrings), lang);
             Util.SetLocalization(typeof(MessageStrings), lang);
             RibbonStrings.ResetDictionary(GameInfo.Strings.ribbons);
-
-            // Update Legality Analysis strings
-            LegalityAnalysis.MoveStrings = GameInfo.Strings.movelist;
-            LegalityAnalysis.SpeciesStrings = GameInfo.Strings.specieslist;
+            LegalityAnalysis.ChangeLocalizationStrings(GameInfo.Strings.movelist, GameInfo.Strings.specieslist);
         }
 
         public static bool CanBeTraded(this PKM pkm)

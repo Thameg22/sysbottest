@@ -307,7 +307,7 @@ namespace SysBot.Pokemon
                 {
                     Log($"Clone request has detected an invalid Pokémon: {(Species)clone.Species}");
                     if (DumpSetting.Dump)
-                        DumpPokemon(DumpSetting.DumpFolder, "hacked", clone);
+                        DumpPokemon(DumpSetting.DumpFolder, "hacked", pk);
 
                     var report = la.Report();
                     Log(report);
@@ -346,7 +346,7 @@ namespace SysBot.Pokemon
 
                 await Click(A, 0_800, token).ConfigureAwait(false);
                 await SetBoxPokemon(clone, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
-                pkm = clone;
+                pkm = pk;
 
                 if (itemReq != SpecialTradeType.None)
                     poke.SendNotification(this, "SSRSpecial request successful!");

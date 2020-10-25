@@ -47,8 +47,8 @@ namespace SysBot.Pokemon
             };
             await task.ConfigureAwait(false);
 
-            await DetachController(token).ConfigureAwait(false);
             await ResetStick(token).ConfigureAwait(false);
+            await DetachController(token).ConfigureAwait(false);
         }
 
         private async Task WalkInLine(CancellationToken token)
@@ -64,8 +64,8 @@ namespace SysBot.Pokemon
                 // Reset stick while we wait for the encounter to load.
                 await ResetStick(token).ConfigureAwait(false);
 
-                var pk = await ReadPokemon(WildPokemonOffset, token).ConfigureAwait(false);
-                if (pk.Species == 0)
+                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
                 {
                     Log("Invalid data detected. Restarting loop.");
 
@@ -75,27 +75,12 @@ namespace SysBot.Pokemon
                     continue;
                 }
 
-                encounterCount++;
-                Log($"Encounter: {encounterCount}{Environment.NewLine}{ShowdownSet.GetShowdownText(pk)}{Environment.NewLine}");
-                Counts.AddCompletedEncounters();
-
-                if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
-                    DumpPokemon(DumpSetting.DumpFolder, "encounters", pk);
-
                 // Offsets are flickery so make sure we see it 3 times.
                 for (int i = 0; i < 3; i++)
                     await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
 
-                if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
-                {
-                    Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
-                    if (Hub.Config.StopConditions.CaptureVideoClip)
-                    {
-                        await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo).ConfigureAwait(false);
-                        await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
-                    }
+                if (await HandleEncounter(pk, false, token).ConfigureAwait(false))
                     return;
-                }
 
                 Log("Running away...");
                 while (await IsInBattle(token).ConfigureAwait(false))
@@ -107,48 +92,19 @@ namespace SysBot.Pokemon
         {
             while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.EncounterBot)
             {
-                await SetStick(LEFT, 0, 20_000, 500, token).ConfigureAwait(false);
-                await SetStick(LEFT, 0, 0, 1_000, token).ConfigureAwait(false);
-
-                var pk = await ReadPokemon(RaidPokemonOffset, token).ConfigureAwait(false);
-                if (pk.Species == 0)
-                {
-                    Connection.Log("Invalid data detected. Restarting loop.");
-                    // add stuff for recovering
-                    continue;
-                }
-
-                encounterCount++;
-                Connection.Log($"Encounter: {encounterCount}:{Environment.NewLine}{ShowdownSet.GetShowdownText(pk)}{Environment.NewLine}{Environment.NewLine}");
-                Counts.AddCompletedLegends();
-
-                if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
-                    DumpPokemon(DumpSetting.DumpFolder, "legends", pk);
-
-                if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
-                {
-                    Connection.Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
-                    return;
-                }
-
-                Connection.Log("Resetting raid by restarting the game");
-                // Close out of the game
-                await Click(HOME, 1_600, token).ConfigureAwait(false);
-                await Click(X, 0_800, token).ConfigureAwait(false);
-                await Click(A, 4_000, token).ConfigureAwait(false); // Closing software prompt
-                Connection.Log("Closed out of the game!");
-
-                // Open game and select profile
-                await Click(A, 1_000, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
-                Connection.Log("Restarting the game!");
-
-                // Switch Logo lag, skip cutscene, game load screen
-                await Task.Delay(14_000, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
-                await Task.Delay(3_500, token).ConfigureAwait(false);
-                Connection.Log("Back in the overworld!");
+                await SetStick(LEFT, 0, 20_000, 1_000, token).ConfigureAwait(false);
                 await ResetStick(token).ConfigureAwait(false);
+
+                var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk != null)
+                {
+                    if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
+                        return;
+                }
+
+                Connection.Log("Resetting Eternatus by restarting the game");
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                await StartGame(Hub.Config, token).ConfigureAwait(false); 
             }
         }
 
@@ -173,24 +129,11 @@ namespace SysBot.Pokemon
                     await Click(A, 1_000, token).ConfigureAwait(false);
 
                 Log("Encounter started! Checking details...");
-                var pk = await ReadPokemon(LegendaryPokemonOffset, token).ConfigureAwait(false);
-                if (pk.Species == 0)
+                var pk = await ReadUntilPresent(LegendaryPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
                 {
                     Log("Invalid data detected. Restarting loop.");
                     continue;
-                }
-
-                encounterCount++;
-                Log($"Encounter: {encounterCount}{Environment.NewLine}{ShowdownSet.GetShowdownText(pk)}{Environment.NewLine}");
-                Counts.AddCompletedLegends();
-
-                if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
-                    DumpPokemon(DumpSetting.DumpFolder, "legends", pk);
-
-                if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
-                {
-                    Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
-                    return;
                 }
 
                 // Get rid of any stick stuff left over so we can flee properly.
@@ -202,6 +145,9 @@ namespace SysBot.Pokemon
                 // Offsets are flickery so make sure we see it 3 times.
                 for (int i = 0; i < 3; i++)
                     await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+
+                if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
+                    return;
 
                 Log("Running away...");
                 while (await IsInBattle(token).ConfigureAwait(false))
@@ -256,6 +202,32 @@ namespace SysBot.Pokemon
             }
 
             return -1; // aborted
+        }
+
+        private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
+        {
+            encounterCount++;
+            Log($"Encounter: {encounterCount}{Environment.NewLine}{ShowdownSet.GetShowdownText(pk)}{Environment.NewLine}");
+            if (legends)
+                Counts.AddCompletedLegends();
+            else
+                Counts.AddCompletedEncounters();
+
+            if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+                DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
+
+            if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
+            {
+                Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
+                if (Hub.Config.StopConditions.CaptureVideoClip)
+                {
+                    await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo).ConfigureAwait(false);
+                    await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                }
+                return true;
+            }
+
+            return false;
         }
 
         private async Task ResetStick(CancellationToken token)

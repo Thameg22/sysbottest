@@ -30,20 +30,11 @@ namespace SysBot.Pokemon
         [Category(StopConditions), Description("Extra time in milliseconds to wait after an encounter is matched before pressing Capture for EncounterBot or Fossilbot.")]
         public int ExtraTimeWaitCaptureVideo { get; set; } = 10000;
 
+        [Category(StopConditions), Description("If set to TRUE, matches both ShinyTarget and TargetIVs settings. Otherwise, looks for either ShinyTarget or TargetIVs match.")]
+        public bool MatchShinyAndIV { get; set; } = true;
+
         public static bool EncounterFound(PK8 pk, int[] targetIVs, StopConditionSettings settings)
         {
-            if (settings.ShinyTarget != TargetShinyType.DisableOption)
-            {
-                if (settings.ShinyTarget == TargetShinyType.NonShiny && pk.IsShiny)
-                    return false;
-                if (settings.ShinyTarget != TargetShinyType.NonShiny && !pk.IsShiny)
-                    return false;
-                if (settings.ShinyTarget == TargetShinyType.StarOnly && pk.ShinyXor == 0)
-                    return false;
-                if (settings.ShinyTarget == TargetShinyType.SquareOnly && pk.ShinyXor != 0)
-                    return false;
-            }
-
             // Match Nature and Species if they were specified.
             if (settings.StopOnSpecies != Species.None && settings.StopOnSpecies != (Species)pk.Species)
                 return false;
@@ -53,6 +44,26 @@ namespace SysBot.Pokemon
 
             if (settings.MarkOnly && !HasMark(pk))
                 return false;
+
+            if (settings.ShinyTarget != TargetShinyType.DisableOption)
+            {
+                bool shinymatch = settings.ShinyTarget switch
+                {
+                    TargetShinyType.AnyShiny => pk.IsShiny,
+                    TargetShinyType.NonShiny => !pk.IsShiny,
+                    TargetShinyType.StarOnly => pk.IsShiny && pk.ShinyXor != 0,
+                    TargetShinyType.SquareOnly => pk.ShinyXor == 0,
+                    TargetShinyType.DisableOption => true,
+                    _ => throw new ArgumentException(nameof(TargetShinyType)),
+                };
+
+                // If we only needed to match one of the criteria and it shinymatch'd, return true.
+                // If we needed to match both criteria and it didn't shinymatch, return false.
+                if (!settings.MatchShinyAndIV && shinymatch)
+                    return true;
+                if (settings.MatchShinyAndIV && !shinymatch)
+                    return false;
+            }
 
             int[] pkIVList = PKX.ReorderSpeedLast(pk.IVs);
 
@@ -80,14 +91,14 @@ namespace SysBot.Pokemon
             // Only accept up to 6 values in case people can't count.
             for (int i = 0; i < 6 && i < splitIVs.Length; i++)
             {
-                if (splitIVs[i] == "x" || splitIVs[i] == "X")
-                    continue;
-                targetIVs[i] = Convert.ToInt32(splitIVs[i]);
+                var str = splitIVs[i];
+                if (int.TryParse(str, out var val))
+                    targetIVs[i] = val;
             }
             return targetIVs;
         }
 
-        private static bool HasMark(PK8 pk)
+        private static bool HasMark(IRibbonIndex pk)
         {
             for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
             {

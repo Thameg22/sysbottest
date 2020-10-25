@@ -502,7 +502,7 @@ namespace SysBot.Pokemon
             else
                 UserListSpecialReqCount.Add(TrainerName, 1);
 
-            if (UserListSpecialReqCount[TrainerName] >= 4)
+            if (UserListSpecialReqCount[TrainerName] >= 2)
             {
                 Log($"Softbanned {TrainerName}.");
                 detail.SendNotification(this, $"SSRToo many special requests! Please wait until {(LastHour + 2)%24}:00 UTC.");
@@ -792,7 +792,7 @@ namespace SysBot.Pokemon
         }
 
         readonly System.Collections.Generic.List<int> UsableHours = new System.Collections.Generic.List<int>(new int[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23 });
-        readonly System.Collections.Generic.List<string> AlwaysNames = new System.Collections.Generic.List<string>(new string[] { "Altair", "Drewsky", "盛风", "BROOT", "Kevon", "Ayalet", "Yami", "Berry" });
+        readonly System.Collections.Generic.List<string> AlwaysNames = new System.Collections.Generic.List<string>(new string[] { "Altair", "Drewsky", "盛风", "BROOT", "Kevon", "Ayalet", "Yami", "Berry", "Vince" });
         int LastHour = 0;
         Dictionary<string, int> UserListSpecialReqCount = new Dictionary<string, int>();
         bool IsPrimeHour(int number, string trainer) => UsableHours.Contains(number) || AlwaysNames.Contains(trainer);

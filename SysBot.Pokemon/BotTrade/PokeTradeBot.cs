@@ -189,7 +189,7 @@ namespace SysBot.Pokemon
             var code = poke.Code;
             Log($"Entering Link Trade Code: {code:0000 0000}...");
             poke.SendNotification(this, $"Entering Link Trade Code: {code:0000 0000}...");
-            await EnterTradeCode(code, token).ConfigureAwait(false);
+            await EnterTradeCode(code, Hub.Config, token).ConfigureAwait(false);
 
             // Wait for Barrier to trigger all bots simultaneously.
             WaitAtBarrierIfApplicable(token);
@@ -422,6 +422,7 @@ namespace SysBot.Pokemon
                 if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
                 {
                     detail.SendNotification(this, "SSRName clear request will only execute during odd UTC hours!");
+                    sst = SpecialTradeType.FailReturn;
                     return sst;
                 }
                 switch (pk.HeldItem)
@@ -446,6 +447,7 @@ namespace SysBot.Pokemon
                 if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
                 {
                     detail.SendNotification(this, "SSRItem request will only execute during odd UTC hours!");
+                    sst = SpecialTradeType.FailReturn;
                     return sst;
                 }
                 var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
@@ -466,6 +468,7 @@ namespace SysBot.Pokemon
                 if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
                 {
                     detail.SendNotification(this, "SSRBall request will only execute during odd UTC hours!");
+                    sst = SpecialTradeType.FailReturn;
                     return sst;
                 }
                 var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);

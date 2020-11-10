@@ -3,6 +3,7 @@ using PKHeX.Core.Searching;
 using SysBot.Base;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Permissions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -348,8 +349,10 @@ namespace SysBot.Pokemon
                 await SetBoxPokemon(clone, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
                 pkm = pk;
 
-                if (itemReq != SpecialTradeType.None)
+                if (itemReq != SpecialTradeType.None && itemReq != SpecialTradeType.Shinify)
                     poke.SendNotification(this, "SSRSpecial request successful!");
+                else if (itemReq == SpecialTradeType.Shinify)
+                    poke.SendNotification(this, "SSRThanks for being part of the community!");
 
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
@@ -416,7 +419,7 @@ namespace SysBot.Pokemon
         private SpecialTradeType CheckItemRequest(ref PK8 pk, PokeTradeDetail<PK8> detail, string TrainerName)
         {
             var sst = SpecialTradeType.None;
-
+            bool skipTimeCheck = false;
             if (pk.HeldItem >= 2 && pk.HeldItem <= 4) // ultra<>pokeball
             {
                 if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
@@ -440,7 +443,35 @@ namespace SysBot.Pokemon
                 }
 
                 pk.HeldItem = 1; //free master
+
+                var la = new LegalityAnalysis(pk);
+                if (!la.Valid)
+                {
+                    detail.SendNotification(this, "SSRThis request isn't legal! Attemping to legalize...");
+                    pk = (PK8)pk.LegalizePokemon();
+                }
+
                 sst = SpecialTradeType.SanitizeReq;
+            }
+            else if (pk.HeldItem >= 18 && pk.HeldItem <= 21) // antidote <> awakening
+            {
+                var type = Shiny.AlwaysStar; // antidote or ice heal
+                if (pk.HeldItem == 19 || pk.HeldItem == 21) // burn heal or awakening
+                    type = Shiny.AlwaysSquare;
+                if (pk.HeldItem == 20 || pk.HeldItem == 21) // ice heal or awakening
+                    pk.IVs = new int[] { 31, 31, 31, 31, 31, 31 };
+                CommonEdits.SetShiny(pk, type);
+
+                var la = new LegalityAnalysis(pk);
+                if (!la.Valid)
+                {
+                    detail.SendNotification(this, "SSRThis request isn't legal! Attemping to legalize...");
+                    pk = (PK8)pk.LegalizePokemon();
+                }
+
+                pk.HeldItem = 1; //free master
+                skipTimeCheck = true;
+                sst = SpecialTradeType.Shinify;
             }
             else if (pk.Nickname.StartsWith("!"))
             {
@@ -461,6 +492,14 @@ namespace SysBot.Pokemon
                 }
 
                 pk.HeldItem = item;
+
+                var la = new LegalityAnalysis(pk);
+                if (!la.Valid)
+                {
+                    detail.SendNotification(this, "SSRThis request isn't legal! Attemping to legalize...");
+                    pk = (PK8)pk.LegalizePokemon();
+                }
+
                 sst = SpecialTradeType.ItemReq;
             }
             else if (pk.Nickname.StartsWith("?") || pk.Nickname.StartsWith("？"))
@@ -483,13 +522,21 @@ namespace SysBot.Pokemon
                 }
 
                 pk.Ball = item;
+
+                var la = new LegalityAnalysis(pk);
+                if (!la.Valid)
+                {
+                    detail.SendNotification(this, "SSRThis request isn't legal! Attemping to legalize...");
+                    pk = (PK8)pk.LegalizePokemon();
+                }
+
                 sst = SpecialTradeType.BallReq;
             }
             else 
                 return sst;
 
             // just for that one edge case
-            if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
+            if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName) && !skipTimeCheck)
             {
                 return SpecialTradeType.None;
             }
@@ -507,9 +554,12 @@ namespace SysBot.Pokemon
 
             if (UserListSpecialReqCount[TrainerName] >= 2)
             {
-                Log($"Softbanned {TrainerName}.");
-                detail.SendNotification(this, $"SSRToo many special requests! Please wait until {(LastHour + 2)%24}:00 UTC.");
-                return SpecialTradeType.FailReturn;
+                if (!AlwaysNames.Contains(TrainerName))
+                {
+                    Log($"Softbanned {TrainerName}.");
+                    detail.SendNotification(this, $"SSRToo many special requests! Please wait until {(LastHour + 2) % 24}:00 UTC.");
+                    return SpecialTradeType.FailReturn;
+                }
             }
 
             pk.ClearNickname();
@@ -791,13 +841,31 @@ namespace SysBot.Pokemon
             ItemReq,
             BallReq,
             SanitizeReq,
+            Shinify,
             FailReturn
         }
 
+        private static string NamePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), @"0names.txt"); // needed for systemctl service on linux for mono to find config.json 
+        private static object _sync = new object();
         readonly System.Collections.Generic.List<int> UsableHours = new System.Collections.Generic.List<int>(new int[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23 });
-        readonly System.Collections.Generic.List<string> AlwaysNames = new System.Collections.Generic.List<string>(new string[] { "Altair", "Drewsky", "盛风", "BROOT", "Kevon", "Ayalet", "Yami", "Berry", "Vince" });
+        System.Collections.Generic.List<string> AlwaysNames { get => collectNames(); } 
         int LastHour = 0;
         Dictionary<string, int> UserListSpecialReqCount = new Dictionary<string, int>();
         bool IsPrimeHour(int number, string trainer) => UsableHours.Contains(number) || AlwaysNames.Contains(trainer);
+        List<string> collectNames()
+        {
+            string[] temp = new string[] { "\n" };
+            try
+            {
+                lock (_sync)
+                {
+                    var rawText = File.ReadAllText(NamePath);
+                    var split = rawText.Split (new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    temp = split;
+                }
+            }
+            catch { }
+            return new List<string>(temp);
+        }
     }
 }

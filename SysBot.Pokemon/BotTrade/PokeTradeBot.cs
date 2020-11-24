@@ -1,4 +1,5 @@
 ﻿using PKHeX.Core;
+using PKHeX.Core.AutoMod;
 using PKHeX.Core.Searching;
 using SysBot.Base;
 using System;
@@ -9,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsets;
+using static SysBot.Pokemon.SpecialRequests;
 
 namespace SysBot.Pokemon
 {
@@ -103,7 +105,7 @@ namespace SysBot.Pokemon
 
                 string tradetype = $" ({detail.Type})";
                 Log($"Starting next {type}{tradetype} Bot Trade. Getting data...");
-                await Task.Delay(6_500, token).ConfigureAwait(false); // hack number 301923 for getting web to work
+                await Task.Delay(2_500, token).ConfigureAwait(false); // hack number 301923 for getting web to work
                 Hub.Config.Stream.StartTrade(this, detail, Hub);
                 Hub.Queues.StartTrade(this, detail);
 
@@ -264,7 +266,7 @@ namespace SysBot.Pokemon
 
             SpecialTradeType itemReq = SpecialTradeType.None;
             if (poke.Type == PokeTradeType.Seed)
-                itemReq = CheckItemRequest(ref pk, poke, TrainerName);
+                itemReq = CheckItemRequest(ref pk, this, poke, TrainerName, sav);
             if (itemReq == SpecialTradeType.FailReturn)
             {
                 await ExitTrade(Hub.Config, false, token).ConfigureAwait(false);
@@ -327,32 +329,37 @@ namespace SysBot.Pokemon
                 poke.SendNotification(this, $"**Cloned your {(Species)clone.Species}!**\nNow press B to cancel your offer and trade me a Pokémon you don't want.");
                 Log($"Cloned a {(Species)clone.Species}. Waiting for user to change their Pokémon...");
 
-                // Separate this out from WaitForPokemonChanged since we compare to old EC from original read.
-                partnerFound = await ReadUntilChanged(LinkTradePartnerPokemonOffset, oldEC, 15_000, 0_200, false, token).ConfigureAwait(false);
-
-                if (!partnerFound)
+                if (itemReq != SpecialTradeType.WonderCard)
                 {
-                    poke.SendNotification(this, "**HEY CHANGE IT NOW OR I AM LEAVING!!!**");
-                    // They get one more chance.
+                    // Separate this out from WaitForPokemonChanged since we compare to old EC from original read.
                     partnerFound = await ReadUntilChanged(LinkTradePartnerPokemonOffset, oldEC, 15_000, 0_200, false, token).ConfigureAwait(false);
-                }
 
-                var pk2 = await ReadUntilPresent(LinkTradePartnerPokemonOffset, 3_000, 1_000, token).ConfigureAwait(false);
-                if (!partnerFound || pk2 == null || SearchUtil.HashByDetails(pk2) == SearchUtil.HashByDetails(pk))
-                {
-                    Log("Trading partner did not change their Pokémon.");
-                    await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
-                    return PokeTradeResult.TrainerTooSlow;
+                    if (!partnerFound)
+                    {
+                        poke.SendNotification(this, "**HEY CHANGE IT NOW OR I AM LEAVING!!!**");
+                        // They get one more chance.
+                        partnerFound = await ReadUntilChanged(LinkTradePartnerPokemonOffset, oldEC, 15_000, 0_200, false, token).ConfigureAwait(false);
+                    }
+
+                    var pk2 = await ReadUntilPresent(LinkTradePartnerPokemonOffset, 3_000, 1_000, token).ConfigureAwait(false);
+                    if (!partnerFound || pk2 == null || SearchUtil.HashByDetails(pk2) == SearchUtil.HashByDetails(pk))
+                    {
+                        Log("Trading partner did not change their Pokémon.");
+                        await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
+                        return PokeTradeResult.TrainerTooSlow;
+                    }
                 }
 
                 await Click(A, 0_800, token).ConfigureAwait(false);
                 await SetBoxPokemon(clone, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
                 pkm = pk;
 
-                if (itemReq != SpecialTradeType.None && itemReq != SpecialTradeType.Shinify)
+                if (itemReq == SpecialTradeType.WonderCard)
+                    poke.SendNotification(this, "SSRDistribution success!");
+                else if (itemReq != SpecialTradeType.None && itemReq != SpecialTradeType.Shinify)
                     poke.SendNotification(this, "SSRSpecial request successful!");
                 else if (itemReq == SpecialTradeType.Shinify)
-                    poke.SendNotification(this, "SSRThanks for being part of the community!");
+                    poke.SendNotification(this, "SSRShinify success! Thanks for being part of the community!");
 
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
@@ -414,156 +421,6 @@ namespace SysBot.Pokemon
             }
 
             return PokeTradeResult.Success;
-        }
-
-        private SpecialTradeType CheckItemRequest(ref PK8 pk, PokeTradeDetail<PK8> detail, string TrainerName)
-        {
-            var sst = SpecialTradeType.None;
-            bool skipTimeCheck = false;
-            if (pk.HeldItem >= 2 && pk.HeldItem <= 4) // ultra<>pokeball
-            {
-                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
-                {
-                    detail.SendNotification(this, "SSRName clear request will only execute during odd UTC hours!");
-                    sst = SpecialTradeType.FailReturn;
-                    return sst;
-                }
-                switch (pk.HeldItem)
-                {
-                    case 2: //ultra
-                        pk.ClearNickname();
-                        pk.OT_Name = TrainerName;
-                        break;
-                    case 3: //great
-                        pk.OT_Name = TrainerName;
-                        break;
-                    case 4: //poke
-                        pk.ClearNickname();
-                        break;
-                }
-
-                pk.HeldItem = 1; //free master
-
-                var la = new LegalityAnalysis(pk);
-                if (!la.Valid)
-                {
-                    detail.SendNotification(this, "SSRThis request isn't legal! Attemping to legalize...");
-                    pk = (PK8)pk.LegalizePokemon();
-                }
-
-                sst = SpecialTradeType.SanitizeReq;
-            }
-            else if (pk.HeldItem >= 18 && pk.HeldItem <= 21) // antidote <> awakening
-            {
-                var type = Shiny.AlwaysStar; // antidote or ice heal
-                if (pk.HeldItem == 19 || pk.HeldItem == 21) // burn heal or awakening
-                    type = Shiny.AlwaysSquare;
-                if (pk.HeldItem == 20 || pk.HeldItem == 21) // ice heal or awakening
-                    pk.IVs = new int[] { 31, 31, 31, 31, 31, 31 };
-                CommonEdits.SetShiny(pk, type);
-
-                var la = new LegalityAnalysis(pk);
-                if (!la.Valid)
-                {
-                    detail.SendNotification(this, "SSRThis request isn't legal! Attemping to legalize...");
-                    pk = (PK8)pk.LegalizePokemon();
-                }
-
-                pk.HeldItem = 1; //free master
-                skipTimeCheck = true;
-                sst = SpecialTradeType.Shinify;
-            }
-            else if (pk.Nickname.StartsWith("!"))
-            {
-                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
-                {
-                    detail.SendNotification(this, "SSRItem request will only execute during odd UTC hours!");
-                    sst = SpecialTradeType.FailReturn;
-                    return sst;
-                }
-                var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
-                GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
-                var items = (string[])strings.GetItemStrings(8, GameVersion.SWSH);
-                int item = Array.FindIndex(items, z => z.Replace(" ", string.Empty).StartsWith(itemLookup, StringComparison.OrdinalIgnoreCase));
-                if (item < 0)
-                {
-                    detail.SendNotification(this, "SSRItem request was invalid. Check spelling & gen.");
-                    return sst;
-                }
-
-                pk.HeldItem = item;
-
-                var la = new LegalityAnalysis(pk);
-                if (!la.Valid)
-                {
-                    detail.SendNotification(this, "SSRThis request isn't legal! Attemping to legalize...");
-                    pk = (PK8)pk.LegalizePokemon();
-                }
-
-                sst = SpecialTradeType.ItemReq;
-            }
-            else if (pk.Nickname.StartsWith("?") || pk.Nickname.StartsWith("？"))
-            {
-                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
-                {
-                    detail.SendNotification(this, "SSRBall request will only execute during odd UTC hours!");
-                    sst = SpecialTradeType.FailReturn;
-                    return sst;
-                }
-                var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
-                GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
-                var balls = strings.balllist;
-
-                int item = Array.FindIndex(balls, z => z.Replace(" ", string.Empty).StartsWith(itemLookup, StringComparison.OrdinalIgnoreCase));
-                if (item < 0)
-                {
-                    detail.SendNotification(this, "SSRBall request was invalid. Check spelling & gen.");
-                    return sst;
-                }
-
-                pk.Ball = item;
-
-                var la = new LegalityAnalysis(pk);
-                if (!la.Valid)
-                {
-                    detail.SendNotification(this, "SSRThis request isn't legal! Attemping to legalize...");
-                    pk = (PK8)pk.LegalizePokemon();
-                }
-
-                sst = SpecialTradeType.BallReq;
-            }
-            else 
-                return sst;
-
-            // just for that one edge case
-            if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName) && !skipTimeCheck)
-            {
-                return SpecialTradeType.None;
-            }
-
-            // success but prevent overuse which causes connection errors
-            if (DateTime.UtcNow.Hour != LastHour)
-            {
-                LastHour = DateTime.UtcNow.Hour;
-                UserListSpecialReqCount.Clear();
-            }
-            if (UserListSpecialReqCount.ContainsKey(TrainerName))
-                UserListSpecialReqCount[TrainerName] = UserListSpecialReqCount[TrainerName] + 1;
-            else
-                UserListSpecialReqCount.Add(TrainerName, 1);
-
-            if (UserListSpecialReqCount[TrainerName] >= 2)
-            {
-                if (!AlwaysNames.Contains(TrainerName))
-                {
-                    Log($"Softbanned {TrainerName}.");
-                    detail.SendNotification(this, $"SSRToo many special requests! Please wait until {(LastHour + 2) % 24}:00 UTC.");
-                    return SpecialTradeType.FailReturn;
-                }
-            }
-
-            pk.ClearNickname();
-            return sst;
         }
 
         private async Task<PokeTradeResult> ProcessDumpTradeAsync(PokeTradeDetail<PK8> detail, CancellationToken token)
@@ -835,37 +692,5 @@ namespace SysBot.Pokemon
             return await ReadUntilChanged(offset, oldEC, waitms, waitInterval, false, token).ConfigureAwait(false);
         }
 
-        public enum SpecialTradeType
-        {
-            None,
-            ItemReq,
-            BallReq,
-            SanitizeReq,
-            Shinify,
-            FailReturn
-        }
-
-        private static string NamePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), @"0names.txt"); // needed for systemctl service on linux for mono to find config.json 
-        private static object _sync = new object();
-        readonly System.Collections.Generic.List<int> UsableHours = new System.Collections.Generic.List<int>(new int[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23 });
-        System.Collections.Generic.List<string> AlwaysNames { get => collectNames(); } 
-        int LastHour = 0;
-        Dictionary<string, int> UserListSpecialReqCount = new Dictionary<string, int>();
-        bool IsPrimeHour(int number, string trainer) => UsableHours.Contains(number) || AlwaysNames.Contains(trainer);
-        List<string> collectNames()
-        {
-            string[] temp = new string[] { "\n" };
-            try
-            {
-                lock (_sync)
-                {
-                    var rawText = File.ReadAllText(NamePath);
-                    var split = rawText.Split (new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                    temp = split;
-                }
-            }
-            catch { }
-            return new List<string>(temp);
-        }
     }
 }

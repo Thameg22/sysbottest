@@ -65,9 +65,9 @@ namespace SysBot.Pokemon.Web
                 NotifyServerOfState(WebTradeState.TypingCode, new KeyValuePair<string, string>("option", code));
 
             if (message.Contains("Unable to calculate seeds: "))
-                NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": " + message.Replace("Unable to calculate seeds: ", string.Empty)));
+                NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": " + message.Replace("Unable to calculate seeds: ", "Seedcheck failure! ")));
             if (message.Contains("This Pokémon is already shiny!"))
-                NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": This Pokémon is already shiny!"));
+                NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": I can't Seedcheck a shiny Pokémon!"));
             if (message.StartsWith("SSR"))
                 NotifyServerOfState(WebTradeState.Finished, new KeyValuePair<string, string>("option", OtherTrainer + ": " + message.Substring(3)));
         }

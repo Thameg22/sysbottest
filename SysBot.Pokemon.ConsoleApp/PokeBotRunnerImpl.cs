@@ -52,6 +52,9 @@ namespace SysBot.Pokemon.ConsoleApp
             if (Web != null)
                 return; // already created
 
+            if (string.IsNullOrEmpty(config.URIEndpoint))
+                return;
+
             Web = new WebBot(Hub.Config.Web, Hub);
         }
 

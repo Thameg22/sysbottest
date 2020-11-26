@@ -29,7 +29,6 @@ namespace SysBot.Pokemon
         static Dictionary<string, int> SpecificItemRequests { get => collectItemReqs(); }
         static int LastHour = 0;
         static Dictionary<string, int> UserListSpecialReqCount = new Dictionary<string, int>();
-        static bool IsPrimeHour(int number, string trainer) => UsableHours.Contains(number) || AlwaysNames.Contains(trainer);
         static List<string> collectNames()
         {
             string[] temp = new string[] { "\n" };
@@ -76,15 +75,8 @@ namespace SysBot.Pokemon
             if (specs.ContainsKey(TrainerName))
                 heldItemNew = specs[TrainerName];
 
-            bool skipTimeCheck = false;
             if (pk.HeldItem >= 2 && pk.HeldItem <= 4) // ultra<>pokeball
             {
-                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
-                {
-                    detail.SendNotification(caller, "SSRName clear request will only execute during odd UTC hours!");
-                    sst = SpecialTradeType.FailReturn;
-                    return sst;
-                }
                 switch (pk.HeldItem)
                 {
                     case 2: //ultra
@@ -108,7 +100,6 @@ namespace SysBot.Pokemon
             }
             else if (pk.Nickname.Contains("pls"))
             {
-                skipTimeCheck = true;
                 PK8? loaded = LoadEvent(pk.Nickname.Replace("pls", "").ToLower(), sav);
 
                 if (loaded != null)
@@ -124,12 +115,6 @@ namespace SysBot.Pokemon
             }
             else if ((pk.HeldItem >= 18 && pk.HeldItem <= 22) || pk.IsEgg || pk.HeldItem == 27) // antidote <> awakening (21) <> paralyze heal (22) <> full heal
             {
-                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
-                {
-                    detail.SendNotification(caller, "SSRPlease wait for odd UTC hours!");
-                    sst = SpecialTradeType.FailReturn;
-                    return sst;
-                }
                 if (pk.HeldItem == 22)
                     pk.SetUnshiny();
                 else
@@ -139,12 +124,8 @@ namespace SysBot.Pokemon
                         type = Shiny.AlwaysSquare;
                     if (pk.HeldItem == 20 || pk.HeldItem == 21 || pk.HeldItem == 27) // ice heal or awakening or fh
                         pk.IVs = new int[] { 31, 31, 31, 31, 31, 31 };
-                    CommonEdits.SetShiny(pk, type);
-                }
-
-                if (pk.IsEgg)
-                {
-                    detail.SendNotification(caller, "SSRThis is an egg.");
+                    if (pk.HeldItem != 27)
+                        CommonEdits.SetShiny(pk, type);
                 }
 
                 LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);
@@ -158,13 +139,6 @@ namespace SysBot.Pokemon
             }
             else if (pk.HeldItem >= 55 && pk.HeldItem <= 62) // guard spec <> x sp.def
             {
-                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
-                {
-                    detail.SendNotification(caller, "SSRPlease wait for odd UTC hours!");
-                    sst = SpecialTradeType.FailReturn;
-                    return sst;
-                }
-
                 switch (pk.HeldItem)
                 {
                     case 55: // guard spec
@@ -203,12 +177,6 @@ namespace SysBot.Pokemon
             }
             else if (pk.Nickname.StartsWith("!"))
             {
-                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
-                {
-                    detail.SendNotification(caller, "SSRItem request will only execute during odd UTC hours!");
-                    sst = SpecialTradeType.FailReturn;
-                    return sst;
-                }
                 var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
                 GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
                 var items = (string[])strings.GetItemStrings(8, GameVersion.SWSH);
@@ -227,12 +195,6 @@ namespace SysBot.Pokemon
             }
             else if (pk.Nickname.StartsWith("?") || pk.Nickname.StartsWith("？"))
             {
-                if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName))
-                {
-                    detail.SendNotification(caller, "SSRBall request will only execute during odd UTC hours!");
-                    sst = SpecialTradeType.FailReturn;
-                    return sst;
-                }
                 var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
                 GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
                 var balls = strings.balllist;
@@ -253,32 +215,29 @@ namespace SysBot.Pokemon
             else
                 return sst;
 
-            // just for that one edge case
-            if (!IsPrimeHour(DateTime.UtcNow.Hour, TrainerName) && !skipTimeCheck)
+            if (detail.Trainer.TrainerName.StartsWith("Berichan")) // web only
             {
-                return SpecialTradeType.None;
-            }
-
-            // success but prevent overuse which causes connection errors
-            if (DateTime.UtcNow.Hour != LastHour)
-            {
-                LastHour = DateTime.UtcNow.Hour;
-                UserListSpecialReqCount.Clear();
-            }
-            if (UserListSpecialReqCount.ContainsKey(TrainerName))
-                UserListSpecialReqCount[TrainerName] = UserListSpecialReqCount[TrainerName] + 1;
-            else
-                UserListSpecialReqCount.Add(TrainerName, 1);
-
-            int limit = sst == SpecialTradeType.Shinify ? 3 : 2;
-
-            if (UserListSpecialReqCount[TrainerName] >= limit)
-            {
-                if (!AlwaysNames.Contains(TrainerName))
+                // success but prevent overuse which causes connection errors
+                if (DateTime.UtcNow.Hour != LastHour)
                 {
-                    caller.Log($"Softbanned {TrainerName}.");
-                    detail.SendNotification(caller, $"SSRToo many special requests! Please wait until {(LastHour + 2) % 24}:00 UTC.");
-                    return SpecialTradeType.FailReturn;
+                    LastHour = DateTime.UtcNow.Hour;
+                    UserListSpecialReqCount.Clear();
+                }
+                if (UserListSpecialReqCount.ContainsKey(TrainerName))
+                    UserListSpecialReqCount[TrainerName] = UserListSpecialReqCount[TrainerName] + 1;
+                else
+                    UserListSpecialReqCount.Add(TrainerName, 1);
+
+                int limit = 3; // n-1
+
+                if (UserListSpecialReqCount[TrainerName] >= limit)
+                {
+                    if (!AlwaysNames.Contains(TrainerName))
+                    {
+                        caller.Log($"Softbanned {TrainerName}.");
+                        detail.SendNotification(caller, $"SSRToo many special requests! Please wait an hour.");
+                        return SpecialTradeType.FailReturn;
+                    }
                 }
             }
 
@@ -287,11 +246,17 @@ namespace SysBot.Pokemon
             return sst;
         }
 
+        public static void AddToPlayerLimit(string trainerName, int toAddRemove)
+        {
+            if (UserListSpecialReqCount.ContainsKey(trainerName))
+                UserListSpecialReqCount[trainerName] = Math.Max(0, UserListSpecialReqCount[trainerName] + toAddRemove);
+        }
+
         private static PK8? LoadEvent(string v, SAV8SWSH sav)
         {
             PK8? toRet = null;
             byte[] wc = new byte[1];
-            string type = "wc8";
+            string type = "fail";
 
             string pathwc = Path.Combine("wc", v + ".wc8");
             if (File.Exists(pathwc)) { wc = File.ReadAllBytes(pathwc); type = "wc8"; }
@@ -302,7 +267,12 @@ namespace SysBot.Pokemon
             pathwc = Path.Combine("wc", v + ".pgf");
             if (File.Exists(pathwc)) { wc = File.ReadAllBytes(pathwc); type = "pgf"; }
 
-            var loadedwc = LoadWC(wc, type);
+            if (type == "fail")
+                return null;
+
+            MysteryGift? loadedwc = null;
+            if (wc.Length != 1)
+                loadedwc = LoadWC(wc, type);
             if (loadedwc != null)
             {
                 var pkloaded = loadedwc.ConvertToPKM(sav);

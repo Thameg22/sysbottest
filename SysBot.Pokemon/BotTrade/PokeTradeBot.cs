@@ -316,7 +316,11 @@ namespace SysBot.Pokemon
                     Log(report);
                     poke.SendNotification(this, "This Pokémon is not legal per PKHeX's legality checks. I am forbidden from cloning this. Exiting trade.");
                     if (itemReq != SpecialTradeType.None)
-                        poke.SendNotification(this, "SSRYour request is invalid, legality check failed!");
+                    {
+                        poke.SendNotification(this, "SSRYour request isn't legal. Please try a different Pokémon or request.");
+                        SpecialRequests.AddToPlayerLimit(TrainerName, -1);
+                    }
+
                     poke.SendNotification(this, report);
 
                     await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);

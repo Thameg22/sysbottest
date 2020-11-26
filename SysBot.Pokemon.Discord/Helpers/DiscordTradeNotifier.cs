@@ -54,6 +54,8 @@ namespace SysBot.Pokemon.Discord
 
         public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, string message)
         {
+            if (message.StartsWith("SSR"))
+                message = message.Substring(3);
             Context.User.SendMessageAsync(message).ConfigureAwait(false);
         }
 

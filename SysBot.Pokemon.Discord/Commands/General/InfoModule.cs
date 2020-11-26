@@ -16,8 +16,8 @@ namespace SysBot.Pokemon.Discord
     // Copyright 2017, Christopher F. <foxbot@protonmail.com>
     public class InfoModule : ModuleBase<SocketCommandContext>
     {
-        private const string detail = "I am an open source Discord bot powered by PKHeX.Core and other open source software.";
-        private const string repo = "https://github.com/kwsch/SysBot.NET";
+        private const string detail = "I am an open source Discord bot powered by PKHeX.Core and other open source software, with some improvements and web functionality added by Berichan.";
+        private const string repo = "https://github.com/berichan/SysBot.NET";
 
         [Command("info")]
         [Alias("about", "whoami", "owner")]

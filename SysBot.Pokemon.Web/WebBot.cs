@@ -30,25 +30,25 @@ namespace SysBot.Pokemon.Web
             Task.Run(() => loopTrades());
         }
 
-        private async void loopTrades()
+        private async void loopTrades(string toAdd = "")
         {
-            var trainer = new PokeTradeTrainerInfo("Berichan");
+            var trainerDetail = "Berichan" + toAdd;
+            var trainer = new PokeTradeTrainerInfo(trainerDetail);
             var pk = new PK8();
             while (true)
             {
-                if (Hub.Queues.GetQueue(PokeRoutineType.SeedCheck).Count == 0)
+                if (!Hub.Queues.GetQueue(PokeRoutineType.SeedCheck).Contains(trainerDetail))
                 {
+                    await Task.Delay(100).ConfigureAwait(false);
+
                     var notifier = new WebTradeNotifier<PK8>(pk, trainer, Code, WebNotifierInstance);
-                    var detail = new PokeTradeDetail<PK8>(pk, trainer, notifier, PokeTradeType.Seed, Code);
+                    var detail = new PokeTradeDetail<PK8>(pk, trainer, notifier, PokeTradeType.Seed, Code, true);
                     var trade = new TradeEntry<PK8>(detail, 0ul, PokeRoutineType.SeedCheck, "");
 
                     Info.AddToTradeQueue(trade, 0ul, false);
                 }
 
-                while (Hub.Queues.GetQueue(PokeRoutineType.SeedCheck).Count > 0)
-                {
-                    await Task.Delay(1_000).ConfigureAwait(false);
-                }
+                await Task.Delay(1_000).ConfigureAwait(false);
             }
         }
     }

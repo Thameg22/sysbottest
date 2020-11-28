@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using PKHeX.Core;
 using System.Linq;
 using System.Threading.Tasks;
@@ -105,6 +106,58 @@ namespace SysBot.Pokemon.Discord
         {
             var code = Info.GetRandomTradeCode();
             await TradeAsyncAttach(code).ConfigureAwait(false);
+        }
+
+        [Command("tradeUser")]
+        [Alias("tur")]
+        [Summary("Trades user(s) a PK8 with the priority of the caller")]
+        [RequireSudo]
+        public async Task TradeAsyncToUser(string paramst)
+        {
+            var attachment = Context.Message.Attachments.FirstOrDefault();
+            if (attachment == default)
+            {
+                await ReplyAsync("No attachment provided!").ConfigureAwait(false);
+                return;
+            }
+
+            var att = await NetUtil.DownloadPKMAsync(attachment).ConfigureAwait(false);
+            if (!att.Success || !(att.Data is PK8 pk8))
+            {
+                await ReplyAsync("No PK8 attachment provided!").ConfigureAwait(false);
+                return;
+            }
+
+            var users = Context.Message.MentionedUsers;
+            if (users.Count < 1)
+            {
+                await ReplyAsync("No users mentioned!").ConfigureAwait(false);
+                return;
+            }
+
+            foreach (var usr in users)
+            {
+                var code = Info.GetRandomTradeCode();
+                var sig = Context.User.GetFavor();
+                await AddTradeToQueueAsync(code, usr.Username, pk8, sig).ConfigureAwait(false);
+            }
+        }
+
+        [Command("pinguser")]
+        [Alias("pngusr")]
+        [Summary("Pings a user (debug)")]
+        [RequireSudo]
+        public async Task DebugPing(string paramst)
+        {
+            var users = Context.Message.MentionedUsers;
+            if (users.Count < 1)
+            {
+                await ReplyAsync("No users mentioned!").ConfigureAwait(false);
+                return;
+            }
+
+            foreach (var usr in users)
+                await ReplyAsync("Hello! " + usr.Username).ConfigureAwait(false);
         }
 
         private async Task AddTradeToQueueAsync(int code, string trainerName, PK8 pk8, RequestSignificance sig)

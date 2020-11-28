@@ -1,8 +1,10 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.Net;
+using Discord.WebSocket;
 using PKHeX.Core;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -12,6 +14,12 @@ namespace SysBot.Pokemon.Discord
 
         public static async Task AddToQueueAsync(this SocketCommandContext Context, int code, string trainer, RequestSignificance sig, PK8 trade, PokeRoutineType routine, PokeTradeType type)
         {
+            var user = Context.User;
+            if (sig == RequestSignificance.Sudo && Context.Message.MentionedUsers.Count > 0)
+            {
+                user = Context.Message.MentionedUsers.ElementAt(0);
+            }
+
             if ((uint)code > MaxTradeCode)
             {
                 await Context.Channel.SendMessageAsync("Trade code should be 00000000-99999999!").ConfigureAwait(false);
@@ -22,7 +30,7 @@ namespace SysBot.Pokemon.Discord
             try
             {
                 const string helper = "I've added you to the queue! I'll message you here when your trade is starting.";
-                test = await Context.User.SendMessageAsync(helper).ConfigureAwait(false);
+                test = await user.SendMessageAsync(helper).ConfigureAwait(false);
             }
             catch (HttpException ex)
             {
@@ -37,7 +45,7 @@ namespace SysBot.Pokemon.Discord
             // Notify in channel
             await Context.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             // Notify in PM to mirror what is said in the channel.
-            await Context.User.SendMessageAsync(msg).ConfigureAwait(false);
+            await user.SendMessageAsync(msg).ConfigureAwait(false);
 
             // Clean Up
             if (result)
@@ -55,12 +63,18 @@ namespace SysBot.Pokemon.Discord
 
         private static bool AddToTradeQueue(this SocketCommandContext Context, PK8 pk8, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, out string msg)
         {
+            bool overrideUser = false;
             var user = Context.User;
+            if (sig == RequestSignificance.Sudo && Context.Message.MentionedUsers.Count > 0)
+            {
+                user = Context.Message.MentionedUsers.ElementAt(0);
+                overrideUser = true;
+            }
             var userID = user.Id;
             var name = user.Username;
 
             var trainer = new PokeTradeTrainerInfo(trainerName);
-            var notifier = new DiscordTradeNotifier<PK8>(pk8, trainer, code, Context);
+            var notifier = new DiscordTradeNotifier<PK8>(pk8, trainer, code, Context, overrideUser ? user : null);
             var detail = new PokeTradeDetail<PK8>(pk8, trainer, notifier, t, code: code, sig == RequestSignificance.Favored);
             var trade = new TradeEntry<PK8>(detail, userID, type, name);
 

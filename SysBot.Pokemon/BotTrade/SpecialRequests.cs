@@ -68,6 +68,18 @@ namespace SysBot.Pokemon
         public static SpecialTradeType CheckItemRequest(ref PK8 pk, PokeRoutineExecutor caller, PokeTradeDetail<PK8> detail, string TrainerName, SAV8SWSH sav)
         {
             var sst = SpecialTradeType.None;
+            int startingHeldItem = pk.HeldItem;
+
+            //log
+            GameStrings str = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
+            var allitems = (string[])str.GetItemStrings(8, GameVersion.SWSH);
+            if (startingHeldItem > 0 && startingHeldItem < allitems.Length)
+            {
+                var itemHeld = allitems[startingHeldItem];
+                caller.Log("Item held: " + itemHeld);
+            }
+            else
+                caller.Log("Held item was outside the bounds of the Array, or nothing was held: " + startingHeldItem);
 
             int heldItemNew = 1; // master
 
@@ -113,18 +125,19 @@ namespace SysBot.Pokemon
 
                 sst = SpecialTradeType.WonderCard;
             }
-            else if ((pk.HeldItem >= 18 && pk.HeldItem <= 22) || pk.IsEgg || pk.HeldItem == 27) // antidote <> awakening (21) <> paralyze heal (22) <> full heal
+            else if ((pk.HeldItem >= 18 && pk.HeldItem <= 22) || pk.IsEgg || pk.HeldItem == 27 || pk.HeldItem == 63) // antidote <> awakening (21) <> paralyze heal (22) <> full heal (27) <> pokedoll (63)
             {
                 if (pk.HeldItem == 22)
                     pk.SetUnshiny();
                 else
                 {
+                    int spdIV = pk.HeldItem == 63 ? 0 : 31;
                     var type = Shiny.AlwaysStar; // antidote or ice heal
                     if (pk.HeldItem == 19 || pk.HeldItem == 21 || pk.IsEgg) // burn heal or awakening
                         type = Shiny.AlwaysSquare;
                     if (pk.HeldItem == 20 || pk.HeldItem == 21 || pk.HeldItem == 27) // ice heal or awakening or fh
-                        pk.IVs = new int[] { 31, 31, 31, 31, 31, 31 };
-                    if (pk.HeldItem != 27)
+                        pk.IVs = new int[] { 31, 31, 31, 31, 31, spdIV };
+                    if (pk.HeldItem != 27 && pk.HeldItem != 63)
                         CommonEdits.SetShiny(pk, type);
                 }
 
@@ -215,7 +228,7 @@ namespace SysBot.Pokemon
             else
                 return sst;
 
-            if (detail.Trainer.TrainerName.StartsWith("Berichan")) // web only
+            if (detail.Trainer.TrainerName.StartsWith("Berichan") && sst != SpecialTradeType.None) // web only
             {
                 // success but prevent overuse which causes connection errors
                 if (DateTime.UtcNow.Hour != LastHour)

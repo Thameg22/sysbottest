@@ -131,14 +131,15 @@ namespace SysBot.Pokemon
                     pk.SetUnshiny();
                 else
                 {
-                    int spdIV = pk.HeldItem == 63 ? 0 : 31;
                     var type = Shiny.AlwaysStar; // antidote or ice heal
                     if (pk.HeldItem == 19 || pk.HeldItem == 21 || pk.IsEgg) // burn heal or awakening
                         type = Shiny.AlwaysSquare;
-                    if (pk.HeldItem == 20 || pk.HeldItem == 21 || pk.HeldItem == 27) // ice heal or awakening or fh
-                        pk.IVs = new int[] { 31, 31, 31, 31, 31, spdIV };
+                    if (pk.HeldItem == 20 || pk.HeldItem == 21 || pk.HeldItem == 27) // ice heal or awakening or fh 
+                        pk.IVs = new int[] { 31, 31, 31, 31, 31, 31 };
                     if (pk.HeldItem != 27 && pk.HeldItem != 63)
                         CommonEdits.SetShiny(pk, type);
+                    if (pk.HeldItem == 63)
+                        pk.IV_SPE = 0;
                 }
 
                 LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);

@@ -45,7 +45,7 @@ namespace SysBot.Pokemon.Discord
             // Notify in channel
             await Context.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             // Notify in PM to mirror what is said in the channel.
-            await user.SendMessageAsync(msg).ConfigureAwait(false);
+            await user.SendMessageAsync(msg + $"\nYour trade code will be **{code:0000 0000}**").ConfigureAwait(false);
 
             // Clean Up
             if (result)

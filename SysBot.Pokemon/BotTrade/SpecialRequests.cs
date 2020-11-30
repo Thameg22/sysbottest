@@ -248,7 +248,7 @@ namespace SysBot.Pokemon
                 {
                     if (!AlwaysNames.Contains(TrainerName))
                     {
-                        caller.Log($"Softbanned {TrainerName}.");
+                        caller.Log($"Softbanned {TrainerName}. Type: {sst}");
                         detail.SendNotification(caller, $"SSRToo many special requests! Please wait an hour.");
                         return SpecialTradeType.FailReturn;
                     }

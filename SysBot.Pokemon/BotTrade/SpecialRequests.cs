@@ -15,6 +15,7 @@ namespace SysBot.Pokemon
             ItemReq,
             BallReq,
             SanitizeReq,
+            StatChange,
             Shinify,
             WonderCard,
             FailReturn
@@ -125,7 +126,7 @@ namespace SysBot.Pokemon
 
                 sst = SpecialTradeType.WonderCard;
             }
-            else if ((pk.HeldItem >= 18 && pk.HeldItem <= 22) || pk.IsEgg || pk.HeldItem == 27 || pk.HeldItem == 63) // antidote <> awakening (21) <> paralyze heal (22) <> full heal (27) <> pokedoll (63)
+            else if ((pk.HeldItem >= 18 && pk.HeldItem <= 22) || pk.IsEgg) // antidote <> awakening (21) <> paralyze heal (22)
             {
                 if (pk.HeldItem == 22)
                     pk.SetUnshiny();
@@ -134,12 +135,10 @@ namespace SysBot.Pokemon
                     var type = Shiny.AlwaysStar; // antidote or ice heal
                     if (pk.HeldItem == 19 || pk.HeldItem == 21 || pk.IsEgg) // burn heal or awakening
                         type = Shiny.AlwaysSquare;
-                    if (pk.HeldItem == 20 || pk.HeldItem == 21 || pk.HeldItem == 27) // ice heal or awakening or fh 
+                    if (pk.HeldItem == 20 || pk.HeldItem == 21) // ice heal or awakening or fh 
                         pk.IVs = new int[] { 31, 31, 31, 31, 31, 31 };
-                    if (pk.HeldItem != 27 && pk.HeldItem != 63)
-                        CommonEdits.SetShiny(pk, type);
-                    if (pk.HeldItem == 63)
-                        pk.IV_SPE = 0;
+                   
+                    CommonEdits.SetShiny(pk, type);
                 }
 
                 LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);
@@ -150,6 +149,32 @@ namespace SysBot.Pokemon
                     pk.SetRecordFlags();
                 }
                 sst = SpecialTradeType.Shinify;
+            }
+            else if ((pk.HeldItem >= 30 && pk.HeldItem <= 32) || pk.HeldItem == 27 || pk.HeldItem == 28 || pk.HeldItem == 63) // fresh water/pop/lemonade <> full heal(27) <> revive(28) <> pokedoll(63)
+            {
+                if (pk.HeldItem == 27)
+                    pk.IVs = new int[] { 31, 31, 31, 31, 31, 31 };
+                if (pk.HeldItem == 28)
+                    pk.IVs = new int[] { 31, 0, 31, 0, 31, 31 };
+                if (pk.HeldItem == 30)
+                    pk.IVs = new int[] { 31, 0, 31, 31, 31, 31 };
+                if (pk.HeldItem == 31)
+                    pk.CurrentLevel = 100;
+                if (pk.HeldItem == 32)
+                {
+                    pk.IVs = new int[] { 31, 31, 31, 31, 31, 31 };
+                    pk.CurrentLevel = 100;
+                }
+
+                if (pk.HeldItem == 63)
+                    pk.IVs = new int[] { 31, 31, 31, 0, 31, 31 };
+
+                pk.SetRecordFlags();
+                pk.HeldItem = heldItemNew; //free master
+
+                LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);
+
+                sst = SpecialTradeType.StatChange;
             }
             else if (pk.HeldItem >= 55 && pk.HeldItem <= 62) // guard spec <> x sp.def
             {
@@ -242,7 +267,7 @@ namespace SysBot.Pokemon
                 else
                     UserListSpecialReqCount.Add(TrainerName, 1);
 
-                int limit = 3; // n-1
+                int limit = 6; // n-1
 
                 if (UserListSpecialReqCount[TrainerName] >= limit)
                 {

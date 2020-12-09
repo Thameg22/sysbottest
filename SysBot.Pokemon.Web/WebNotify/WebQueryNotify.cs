@@ -23,12 +23,16 @@ namespace SysBot.Pokemon.Web
             URI = uriEndpoint;
         }
 
-        public void NotifyServerOfState(WebTradeState state, params KeyValuePair<string, string>[] additionalParams)
+        public void NotifyServerOfState(WebTradeState state, string trainerName, params KeyValuePair<string, string>[] additionalParams)
         {
             var paramsToSend = new Dictionary<string, string>();
             paramsToSend.Add("wts", state.ToString().WebSafeBase64Encode());
             foreach (var p in additionalParams)
                 paramsToSend.Add(p.Key, p.Value.WebSafeBase64Encode());
+            var trainerNameNumber = trainerName[trainerName.Length - 1];
+            var hasNum = int.TryParse(trainerNameNumber.ToString(), out var result);
+            if (hasNum)
+                paramsToSend.Add("index", result.ToString());
             NotifyServerEndpoint(paramsToSend.ToArray());
         }
 

@@ -144,23 +144,6 @@ namespace SysBot.Pokemon.Discord
             }
         }
 
-        [Command("pinguser")]
-        [Alias("pngusr")]
-        [Summary("Pings a user (debug)")]
-        [RequireSudo]
-        public async Task DebugPing(string paramst)
-        {
-            var users = Context.Message.MentionedUsers;
-            if (users.Count < 1)
-            {
-                await ReplyAsync("No users mentioned!").ConfigureAwait(false);
-                return;
-            }
-
-            foreach (var usr in users)
-                await ReplyAsync("Hello! " + usr.Username).ConfigureAwait(false);
-        }
-
         private async Task AddTradeToQueueAsync(int code, string trainerName, PK8 pk8, RequestSignificance sig)
         {
             if (!pk8.CanBeTraded())

@@ -87,7 +87,7 @@ namespace SysBot.Pokemon.Web
         }
 
         private void NotifyServerOfState(WebTradeState state, params KeyValuePair<string, string>[] additionalParams)
-            =>WebNotify.NotifyServerOfState(state, additionalParams);
+            =>WebNotify.NotifyServerOfState(state, Info.TrainerName, additionalParams);
 
         private void NotifyServerOfTradeInfo(SeedSearchResult r)
             => WebNotify.NotifyServerOfSeedInfo(r, Result);

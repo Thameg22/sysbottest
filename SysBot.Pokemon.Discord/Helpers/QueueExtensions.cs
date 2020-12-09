@@ -84,7 +84,7 @@ namespace SysBot.Pokemon.Discord
 
             if (added == QueueResultAdd.AlreadyInQueue)
             {
-                msg = "Sorry, you are already in the queue.";
+                msg = "Sorry, you are already in the queue. If you just finished a trade, wait a second.";
                 return false;
             }
 

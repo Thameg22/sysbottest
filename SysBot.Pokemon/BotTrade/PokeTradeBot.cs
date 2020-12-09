@@ -173,26 +173,29 @@ namespace SysBot.Pokemon
             Log("Selecting Link Trade");
             await Click(A, 1_500, token).ConfigureAwait(false);
 
-            Log("Selecting Link Trade Code");
-            await Click(DDOWN, 500, token).ConfigureAwait(false);
-
-            for (int i = 0; i < 2; i++)
-                await Click(A, 1_500, token).ConfigureAwait(false);
-
-            // All other languages require an extra A press at this menu.
-            if (GameLang != LanguageID.English && GameLang != LanguageID.Spanish)
-                await Click(A, 1_500, token).ConfigureAwait(false);
-
-            // Loading Screen
-            await Task.Delay(1_000, token).ConfigureAwait(false);
             if (poke.Type != PokeTradeType.Random)
-                Hub.Config.Stream.StartEnterCode(this);
-            await Task.Delay(1_000, token).ConfigureAwait(false);
+            {
+                Log("Selecting Link Trade Code");
+                await Click(DDOWN, 500, token).ConfigureAwait(false);
 
-            var code = poke.Code;
-            Log($"Entering Link Trade Code: {code:0000 0000}...");
-            poke.SendNotification(this, $"Entering Link Trade Code: {code:0000 0000}...");
-            await EnterTradeCode(code, Hub.Config, token).ConfigureAwait(false);
+                for (int i = 0; i < 2; i++)
+                    await Click(A, 1_500, token).ConfigureAwait(false);
+
+                // All other languages require an extra A press at this menu.
+                if (GameLang != LanguageID.English && GameLang != LanguageID.Spanish)
+                    await Click(A, 1_500, token).ConfigureAwait(false);
+
+                // Loading Screen
+                await Task.Delay(1_000, token).ConfigureAwait(false);
+                if (poke.Type != PokeTradeType.Random)
+                    Hub.Config.Stream.StartEnterCode(this);
+                await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                var code = poke.Code;
+                Log($"Entering Link Trade Code: {code:0000 0000}...");
+                poke.SendNotification(this, $"Entering Link Trade Code: {code:0000 0000}...");
+                await EnterTradeCode(code, Hub.Config, token).ConfigureAwait(false);
+            }
 
             // Wait for Barrier to trigger all bots simultaneously.
             WaitAtBarrierIfApplicable(token);
@@ -302,36 +305,40 @@ namespace SysBot.Pokemon
                 // Inject the shown Pokémon.
                 var clone = (PK8)pk.Clone();
 
-                if (Hub.Config.Discord.ReturnPK8s)
-                    poke.SendNotification(this, clone, "Here's what you showed me!");
-
-                var la = new LegalityAnalysis(clone);
-                if (!la.Valid && Hub.Config.Legality.VerifyLegality)
+                if (itemReq != SpecialTradeType.WonderCard)
                 {
-                    Log($"Clone request has detected an invalid Pokémon: {(Species)clone.Species}");
-                    if (DumpSetting.Dump)
-                        DumpPokemon(DumpSetting.DumpFolder, "hacked", pk);
+                    if (Hub.Config.Discord.ReturnPK8s)
+                        poke.SendNotification(this, clone, "Here's what you showed me!");
 
-                    var report = la.Report();
-                    Log(report);
-                    poke.SendNotification(this, "This Pokémon is not legal per PKHeX's legality checks. I am forbidden from cloning this. Exiting trade.");
-                    if (itemReq != SpecialTradeType.None)
+                    var la = new LegalityAnalysis(clone);
+                    if (!la.Valid && Hub.Config.Legality.VerifyLegality)
                     {
-                        poke.SendNotification(this, "SSRYour request isn't legal. Please try a different Pokémon or request.");
-                        SpecialRequests.AddToPlayerLimit(TrainerName, -1);
+                        Log($"Clone request has detected an invalid Pokémon: {(Species)clone.Species}");
+                        if (DumpSetting.Dump)
+                            DumpPokemon(DumpSetting.DumpFolder, "hacked", pk);
+
+                        var report = la.Report();
+                        Log(report);
+                        poke.SendNotification(this, "This Pokémon is not legal per PKHeX's legality checks. I am forbidden from cloning this. Exiting trade.");
+                        if (itemReq != SpecialTradeType.None)
+                        {
+                            poke.SendNotification(this, "SSRYour request isn't legal. Please try a different Pokémon or request.");
+                            SpecialRequests.AddToPlayerLimit(TrainerName, -1);
+                        }
+
+                        poke.SendNotification(this, report);
+
+                        await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
+                        return PokeTradeResult.IllegalTrade;
                     }
 
-                    poke.SendNotification(this, report);
+                    if (Hub.Config.Legality.ResetHOMETracker)
+                        clone.Tracker = 0;
 
-                    await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
-                    return PokeTradeResult.IllegalTrade;
+
+                    poke.SendNotification(this, $"**Cloned your {(Species)clone.Species}!**\nNow press B to cancel your offer and trade me a Pokémon you don't want.");
+                    Log($"Cloned a {(Species)clone.Species}. Waiting for user to change their Pokémon...");
                 }
-
-                if (Hub.Config.Legality.ResetHOMETracker)
-                    clone.Tracker = 0;
-
-                poke.SendNotification(this, $"**Cloned your {(Species)clone.Species}!**\nNow press B to cancel your offer and trade me a Pokémon you don't want.");
-                Log($"Cloned a {(Species)clone.Species}. Waiting for user to change their Pokémon...");
 
                 if (itemReq != SpecialTradeType.WonderCard)
                 {

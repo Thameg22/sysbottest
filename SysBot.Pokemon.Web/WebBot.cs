@@ -27,7 +27,8 @@ namespace SysBot.Pokemon.Web
             AuthID = settings.AuthID;
             AuthString = settings.AuthTokenOrString;
             WebNotifierInstance = new SignalRNotify<PK8>(AuthID, AuthString, URI);
-            Task.Run(() => loopTrades());
+            Task.Run(() => loopTrades("0"));
+            Task.Run(() => loopTrades("1"));
         }
 
         private async void loopTrades(string toAdd = "")

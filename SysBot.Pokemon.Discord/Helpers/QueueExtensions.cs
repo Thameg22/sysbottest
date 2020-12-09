@@ -1,10 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
-using Discord.Net;
 using Discord.WebSocket;
+using Discord.Net;
 using PKHeX.Core;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -12,14 +11,8 @@ namespace SysBot.Pokemon.Discord
     {
         private const uint MaxTradeCode = 99999999;
 
-        public static async Task AddToQueueAsync(this SocketCommandContext Context, int code, string trainer, RequestSignificance sig, PK8 trade, PokeRoutineType routine, PokeTradeType type)
+        public static async Task AddToQueueAsync(this SocketCommandContext Context, int code, string trainer, RequestSignificance sig, PK8 trade, PokeRoutineType routine, PokeTradeType type, SocketUser trader)
         {
-            var user = Context.User;
-            if (sig == RequestSignificance.Sudo && Context.Message.MentionedUsers.Count > 0)
-            {
-                user = Context.Message.MentionedUsers.ElementAt(0);
-            }
-
             if ((uint)code > MaxTradeCode)
             {
                 await Context.Channel.SendMessageAsync("Trade code should be 00000000-99999999!").ConfigureAwait(false);
@@ -30,22 +23,23 @@ namespace SysBot.Pokemon.Discord
             try
             {
                 const string helper = "I've added you to the queue! I'll message you here when your trade is starting.";
-                test = await user.SendMessageAsync(helper).ConfigureAwait(false);
+                test = await trader.SendMessageAsync(helper).ConfigureAwait(false);
             }
             catch (HttpException ex)
             {
                 await Context.Channel.SendMessageAsync($"{ex.HttpCode}: {ex.Reason}!").ConfigureAwait(false);
-                await Context.Channel.SendMessageAsync("You must enable private messages in order to be queued!").ConfigureAwait(false);
+                var noAccessMsg = Context.User == trader ? "You must enable private messages in order to be queued!" : "The mentioned user must enable private messages in order for them to be queued!";
+                await Context.Channel.SendMessageAsync(noAccessMsg).ConfigureAwait(false);
                 return;
             }
 
             // Try adding
-            var result = Context.AddToTradeQueue(trade, code, trainer, sig, routine, type, out var msg);
+            var result = Context.AddToTradeQueue(trade, code, trainer, sig, routine, type, trader, out var msg);
 
             // Notify in channel
             await Context.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             // Notify in PM to mirror what is said in the channel.
-            await user.SendMessageAsync(msg + $"\nYour trade code will be **{code:0000 0000}**").ConfigureAwait(false);
+            await trader.SendMessageAsync(msg + $"\nYour trade code will be **{code:0000 0000}**").ConfigureAwait(false);
 
             // Clean Up
             if (result)
@@ -61,20 +55,19 @@ namespace SysBot.Pokemon.Discord
             }
         }
 
-        private static bool AddToTradeQueue(this SocketCommandContext Context, PK8 pk8, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, out string msg)
+        public static async Task AddToQueueAsync(this SocketCommandContext Context, int code, string trainer, RequestSignificance sig, PK8 trade, PokeRoutineType routine, PokeTradeType type)
         {
-            bool overrideUser = false;
-            var user = Context.User;
-            if (sig == RequestSignificance.Sudo && Context.Message.MentionedUsers.Count > 0)
-            {
-                user = Context.Message.MentionedUsers.ElementAt(0);
-                overrideUser = true;
-            }
+            await AddToQueueAsync(Context, code, trainer, sig, trade, routine, type, Context.User).ConfigureAwait(false);
+        }
+
+        private static bool AddToTradeQueue(this SocketCommandContext Context, PK8 pk8, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, SocketUser trader, out string msg)
+        {
+            var user = trader;
             var userID = user.Id;
             var name = user.Username;
 
             var trainer = new PokeTradeTrainerInfo(trainerName);
-            var notifier = new DiscordTradeNotifier<PK8>(pk8, trainer, code, Context, overrideUser ? user : null);
+            var notifier = new DiscordTradeNotifier<PK8>(pk8, trainer, code, user);
             var detail = new PokeTradeDetail<PK8>(pk8, trainer, notifier, t, code: code, sig == RequestSignificance.Favored);
             var trade = new TradeEntry<PK8>(detail, userID, type, name);
 
@@ -84,7 +77,7 @@ namespace SysBot.Pokemon.Discord
 
             if (added == QueueResultAdd.AlreadyInQueue)
             {
-                msg = "Sorry, you are already in the queue. If you just finished a trade, wait a second.";
+                msg = "Sorry, you are already in the queue.";
                 return false;
             }
 

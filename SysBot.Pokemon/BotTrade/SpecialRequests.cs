@@ -214,6 +214,30 @@ namespace SysBot.Pokemon
                 pk.HeldItem = heldItemNew; //free master
                 sst = SpecialTradeType.SanitizeReq;
             }
+            else if (pk.HeldItem >= 1231 && pk.HeldItem <= 1251) // lonely mint <> serious mint
+            {
+                GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
+                var items = (string[])strings.GetItemStrings(8, GameVersion.SWSH);
+                var itemName = items[pk.HeldItem];
+                var natureName = itemName.Split(' ')[0];
+                var natureEnum = Enum.TryParse(natureName, out Nature result);
+                if (natureEnum)
+                    pk.Nature = pk.StatNature = (int)result;
+                else
+                {
+                    detail.SendNotification(caller, "SSRNature request was not found in the db.");
+                    sst = SpecialTradeType.FailReturn;
+                    return sst;
+                }
+
+                pk.SetRecordFlags();
+                pk.HeldItem = heldItemNew; //free master
+
+                LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);
+
+                sst = SpecialTradeType.StatChange;
+
+            }
             else if (pk.Nickname.StartsWith("!"))
             {
                 var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);

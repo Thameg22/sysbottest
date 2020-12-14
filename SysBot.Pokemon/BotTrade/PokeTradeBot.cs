@@ -83,10 +83,11 @@ namespace SysBot.Pokemon
         {
             var type = Config.CurrentRoutineType;
             int waitCounter = 0;
+            bool doDistributionNext = false;
             await SetCurrentBox(0, token).ConfigureAwait(false);
             while (!token.IsCancellationRequested && Config.NextRoutineType == type)
             {
-                if (!Hub.Queues.TryDequeue(type, out var detail, out var priority) && !Hub.Queues.TryDequeueLedy(out detail))
+                if (!Hub.Queues.TryDequeue(type, out var detail, out var priority) && !Hub.Queues.TryDequeueLedy(out detail, doDistributionNext))
                 {
                     if (waitCounter == 0)
                     {
@@ -102,10 +103,11 @@ namespace SysBot.Pokemon
                     continue;
                 }
                 waitCounter = 0;
+                doDistributionNext = false;
 
                 string tradetype = $" ({detail.Type})";
                 Log($"Starting next {type}{tradetype} Bot Trade. Getting data...");
-                await Task.Delay(2_500, token).ConfigureAwait(false); // hack number 301923 for getting web to work
+                await Task.Delay(500, token).ConfigureAwait(false); // hack number 301923 for getting web to work
                 Hub.Config.Stream.StartTrade(this, detail, Hub);
                 Hub.Queues.StartTrade(this, detail);
 
@@ -123,6 +125,7 @@ namespace SysBot.Pokemon
                     {
                         detail.SendNotification(this, $"Oops! Something happened. Canceling the trade: {result}.");
                         detail.TradeCanceled(this, result);
+                        doDistributionNext = true;
                     }
                 }
             }

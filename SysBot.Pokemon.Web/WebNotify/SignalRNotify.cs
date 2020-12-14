@@ -58,7 +58,7 @@ namespace SysBot.Pokemon.Web
             var trainerNameNumber = trainerName[trainerName.Length - 1];
             var hasNum = int.TryParse(trainerNameNumber.ToString(), out var result);
             if (hasNum)
-                paramsToSend.Add("index", result.ToString());
+                paramsToSend.Add("index", result.ToString().WebSafeBase64Encode());
             Task.Run(() => NotifyServerEndpoint(paramsToSend.ToArray()));
         }
 

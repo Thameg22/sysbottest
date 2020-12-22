@@ -13,15 +13,17 @@ namespace SysBot.Pokemon.Discord
         private PokeTradeTrainerInfo Info { get; }
         private int Code { get; }
         private SocketUser Trader { get; }
+        private ISocketMessageChannel CommandSentChannel { get; }
         public Action<PokeRoutineExecutor>? OnFinish { private get; set; }
         public PokeTradeHub<PK8> Hub = SysCordInstance.Self.Hub;
 
-        public DiscordTradeNotifier(T data, PokeTradeTrainerInfo info, int code, SocketUser trader)
+        public DiscordTradeNotifier(T data, PokeTradeTrainerInfo info, int code, SocketUser trader, ISocketMessageChannel commandSentChannel)
         {
             Data = data;
             Info = info;
             Code = code;
             Trader = trader;
+            CommandSentChannel = commandSentChannel;
         }
 
         public void TradeInitialize(PokeRoutineExecutor routine, PokeTradeDetail<T> info)
@@ -41,6 +43,8 @@ namespace SysBot.Pokemon.Discord
         {
             OnFinish?.Invoke(routine);
             Trader.SendMessageAsync($"Trade canceled: {msg}").ConfigureAwait(false);
+            if (msg == PokeTradeResult.NoTrainerFound || msg == PokeTradeResult.TrainerTooSlow)
+                CommandSentChannel.SendMessageAsync($"{Trader.Mention} - Something happened with your trade: {msg}. This has been reported.");
         }
 
         public void TradeFinished(PokeRoutineExecutor routine, PokeTradeDetail<T> info, T result)

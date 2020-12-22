@@ -209,7 +209,7 @@ namespace SysBot.Pokemon.Discord
             }
             if (!mgr.CanUseCommandChannel(msg.Channel.Id) && msg.Author.Id != mgr.Owner)
             {
-                await msg.Channel.SendMessageAsync("You can't use that command here.").ConfigureAwait(false);
+                //await msg.Channel.SendMessageAsync("You can't use that command here.").ConfigureAwait(false);
                 return true;
             }
 

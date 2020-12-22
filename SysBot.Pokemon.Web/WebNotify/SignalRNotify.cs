@@ -103,7 +103,7 @@ namespace SysBot.Pokemon.Web
                 await Connection.InvokeAsync("ReceiveViewMessage",
                     AuthString, uriTry);
             }
-            catch (Exception e) { LogUtil.LogText(e.Message); Environment.Exit(42069); }
+            catch (Exception e) { LogUtil.LogText(e.Message); }
             finally { asyncLock.Release(); }
         }
 

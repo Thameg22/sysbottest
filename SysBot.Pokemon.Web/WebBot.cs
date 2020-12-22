@@ -15,6 +15,7 @@ namespace SysBot.Pokemon.Web
 
         private readonly string URI;
         private readonly string AuthID, AuthString;
+        private readonly int QueueIndex;
 
         private readonly IWebNotify<PK8> WebNotifierInstance;
 
@@ -26,9 +27,10 @@ namespace SysBot.Pokemon.Web
             URI = settings.URIEndpoint;
             AuthID = settings.AuthID;
             AuthString = settings.AuthTokenOrString;
+            QueueIndex = settings.QueueIndex;
             WebNotifierInstance = new SignalRNotify<PK8>(AuthID, AuthString, URI);
-            Task.Run(() => loopTrades(0));
-            Task.Run(() => loopTrades(1));
+            
+            Task.Run(() => loopTrades((ulong)QueueIndex));
         }
 
         private async void loopTrades(ulong toAdd = ulong.MaxValue)

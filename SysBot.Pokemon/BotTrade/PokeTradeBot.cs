@@ -87,7 +87,20 @@ namespace SysBot.Pokemon
             await SetCurrentBox(0, token).ConfigureAwait(false);
             while (!token.IsCancellationRequested && Config.NextRoutineType == type)
             {
-                if (!Hub.Queues.TryDequeue(type, out var detail, out var priority) && !Hub.Queues.TryDequeueLedy(out detail, doDistributionNext))
+                if (doDistributionNext && Hub.Config.Distribution.SurpriseTradeWhileIdle)
+                {
+                    doDistributionNext = false;
+                    for (int x = 0; x < 2; ++x)
+                    {
+                        var pkmST = Hub.Ledy.Pool.GetRandomSurprise(); 
+                        Log($"Surprise trade {x+1}/2 initiated. Sending: {(Species)pkmST.Species}");
+                        pkmST.IsNicknamed = true; pkmST.SetNickname("MerryXmas");
+                        await EnsureConnectedToYComm(Hub.Config, token).ConfigureAwait(false);
+                        var _ = await PerformSurpriseTrade(sav, pkmST, token).ConfigureAwait(false);
+                    }
+                }
+
+                if (!Hub.Queues.TryDequeue(type, out var detail, out var priority) && !Hub.Queues.TryDequeueLedy(out detail))
                 {
                     if (waitCounter == 0)
                     {
@@ -98,6 +111,8 @@ namespace SysBot.Pokemon
                     waitCounter++;
                     if (waitCounter % 10 == 0 && Hub.Config.AntiIdle)
                         await Click(B, 1_000, token).ConfigureAwait(false);
+                    else if (waitCounter % 5 == 0)
+                        doDistributionNext = true;
                     else
                         await Task.Delay(1_000, token).ConfigureAwait(false);
                     continue;
@@ -125,7 +140,8 @@ namespace SysBot.Pokemon
                     {
                         detail.SendNotification(this, $"Oops! Something happened. Canceling the trade: {result}.");
                         detail.TradeCanceled(this, result);
-                        doDistributionNext = true;
+                        if (result != PokeTradeResult.IllegalTrade) // only if waited too long
+                            doDistributionNext = true;
                     }
                 }
             }

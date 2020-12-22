@@ -169,6 +169,9 @@ namespace SysBot.Pokemon
                 if (pk.HeldItem == 63)
                     pk.IVs = new int[] { 31, 31, 31, 0, 31, 31 };
 
+                // clear hyper training from IV switched mons
+                pk.HyperTrainClear();
+
                 pk.SetRecordFlags();
                 pk.HeldItem = heldItemNew; //free master
 

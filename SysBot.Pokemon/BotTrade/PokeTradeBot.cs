@@ -94,7 +94,6 @@ namespace SysBot.Pokemon
                     {
                         var pkmST = Hub.Ledy.Pool.GetRandomSurprise(); 
                         Log($"Surprise trade {x+1}/2 initiated. Sending: {(Species)pkmST.Species}");
-                        pkmST.IsNicknamed = true; pkmST.SetNickname("MerryXmas");
                         await EnsureConnectedToYComm(Hub.Config, token).ConfigureAwait(false);
                         var _ = await PerformSurpriseTrade(sav, pkmST, token).ConfigureAwait(false);
                     }

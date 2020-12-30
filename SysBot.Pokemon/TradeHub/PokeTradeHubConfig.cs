@@ -98,6 +98,10 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public WebSettings Web { get; set; } = new WebSettings();
 
+        [Category(Integration)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public TwitterSettings Twitter { get; set; } = new TwitterSettings();
+
         [Category(Integration), Description("Configure generation of assets for streaming.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public StreamSettings Stream { get; set; } = new StreamSettings();

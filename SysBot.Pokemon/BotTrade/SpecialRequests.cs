@@ -387,7 +387,14 @@ namespace SysBot.Pokemon
             {
                 detail.SendNotification(caller, "SSRThis request isn't legal! Attemping to legalize...");
                 caller.Log(la.Report());
-                pkm = (PK8)pkm.LegalizePokemon();
+                try
+                {
+                    pkm = (PK8)pkm.LegalizePokemon();
+                }
+                catch (Exception e)
+                {
+                    caller.Log("Legalization failed: " + e.Message); return;
+                }
             }
             else
                 return;

@@ -43,7 +43,7 @@ namespace SysBot.Pokemon.Discord
         {
             OnFinish?.Invoke(routine);
             Trader.SendMessageAsync($"Trade canceled: {msg}").ConfigureAwait(false);
-            if (msg == PokeTradeResult.NoTrainerFound || msg == PokeTradeResult.TrainerTooSlow)
+            if (msg == PokeTradeResult.NoTrainerFound)
                 CommandSentChannel.SendMessageAsync($"{Trader.Mention} - Something happened with your trade: {msg}. This has been reported.");
         }
 

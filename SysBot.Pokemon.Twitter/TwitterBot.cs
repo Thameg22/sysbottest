@@ -55,11 +55,17 @@ namespace SysBot.Pokemon.Twitter
             // Check for new mentions every 15 seconds (60 per 15 mins) to avoid rate limit
             while (!token.IsCancellationRequested)
             {
+                // handle new requests for trades
+
                 var currentMentions = await client.Timelines.GetMentionsTimelineAsync(MentionParams);
                 var newMentions = mentions.CheckForNewMentions(currentMentions);
                 if (newMentions.Length > 0)
                     foreach (var tweet in newMentions)
                         await HandleNewMention(tweet);
+
+                // handle twitter queue via DMs
+
+
 
                 await Task.Delay(15_000, token).ConfigureAwait(false);
             }
@@ -142,7 +148,10 @@ namespace SysBot.Pokemon.Twitter
 
             var user = QueuePool.FindLast(q => q.UserName == messagingUser.ScreenName);
             if (user == null)
+            {
+                SendDirectMessage("Sorry, you are not in the queue. Please @ me another request publicly. Have a nice day!", messagingUser.Id);
                 return false;
+            }
             QueuePool.Remove(user);
             var msg = messageBody;
             try

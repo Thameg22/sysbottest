@@ -203,11 +203,10 @@ namespace SysBot.Pokemon
                 if (GameLang != LanguageID.English && GameLang != LanguageID.Spanish)
                     await Click(A, 1_500, token).ConfigureAwait(false);
 
-                // Loading Screen
-                await Task.Delay(1_000, token).ConfigureAwait(false);
-                if (poke.Type != PokeTradeType.Random)
-                    Hub.Config.Stream.StartEnterCode(this);
-                await Task.Delay(1_000, token).ConfigureAwait(false);
+            // Loading Screen
+            if (poke.Type != PokeTradeType.Random)
+                Hub.Config.Stream.StartEnterCode(this);
+            await Task.Delay(Hub.Config.Timings.ExtraTimeOpenCodeEntry, token).ConfigureAwait(false);
 
                 var code = poke.Code;
                 Log($"Entering Link Trade Code: {code:0000 0000}...");

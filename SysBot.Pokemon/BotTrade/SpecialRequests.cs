@@ -184,28 +184,28 @@ namespace SysBot.Pokemon
                 switch (pk.HeldItem)
                 {
                     case 55: // guard spec
-                        pk.SetLanguage(LanguageID.Japanese);
+                        pk.Language = (int)LanguageID.Japanese;
                         break;
                     case 56: // dire hit
-                        pk.SetLanguage(LanguageID.English);
+                        pk.Language = (int)LanguageID.English;
                         break;
                     case 57: // x atk
-                        pk.SetLanguage(LanguageID.German);
+                        pk.Language = (int)LanguageID.German;
                         break;
                     case 58: // x def
-                        pk.SetLanguage(LanguageID.French);
+                        pk.Language = (int)LanguageID.French;
                         break;
                     case 59: // x spe
-                        pk.SetLanguage(LanguageID.Spanish);
+                        pk.Language = (int)LanguageID.Spanish;
                         break;
                     case 60: // x acc
-                        pk.SetLanguage(LanguageID.Korean);
+                        pk.Language = (int)LanguageID.Korean;
                         break;
                     case 61: // x spatk
-                        pk.SetLanguage(LanguageID.ChineseT);
+                        pk.Language = (int)LanguageID.ChineseT;
                         break;
                     case 62: // x spdef
-                        pk.SetLanguage(LanguageID.ChineseS);
+                        pk.Language = (int)LanguageID.ChineseS;
                         break;
                 }
 

@@ -281,7 +281,7 @@ namespace SysBot.Pokemon
             var oldEC = await Connection.ReadBytesAsync(LinkTradePartnerPokemonOffset, 4, token).ConfigureAwait(false);
             if (pk == null)
             {
-                await ExitTrade(Hub.Config, false, token).ConfigureAwait(false);
+                await ExitTrade(Hub.Config, true, token).ConfigureAwait(false);
                 return PokeTradeResult.TrainerTooSlow;
             }
 

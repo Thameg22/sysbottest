@@ -49,6 +49,9 @@ namespace SysBot.Pokemon
             Log("Identifying trainer data of the host console.");
             var sav = await IdentifyTrainer(token).ConfigureAwait(false);
 
+            Log("Turning off screen.");
+            await SetScreen(false, token).ConfigureAwait(false);
+
             Log("Starting main TradeBot loop.");
             while (!token.IsCancellationRequested)
             {

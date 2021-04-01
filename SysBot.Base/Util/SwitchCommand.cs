@@ -163,5 +163,7 @@ namespace SysBot.Base
         /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
         /// <returns>Encoded command bytes</returns>
         public static byte[] GetHeapBase(bool crlf = true) => Encode("getHeapBase", crlf);
+
+        public static byte[] SetScreen(bool on, bool crlf = true) => Encode($"screen{(on ? "On" : "Off")}", crlf);
     }
 }

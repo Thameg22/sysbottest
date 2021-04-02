@@ -41,7 +41,8 @@ namespace SysBot.Pokemon.Web
             try
             {
                 await Connection.StartAsync();
-                Console.WriteLine("Connected succesfully " + Connection.ConnectionId);
+                LogUtil.LogInfo("Connected succesfully " + Connection.ConnectionId, "SignalR");
+                Connected = true;
             }
             catch (Exception ex)
             {

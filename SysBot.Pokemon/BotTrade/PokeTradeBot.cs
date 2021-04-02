@@ -49,6 +49,11 @@ namespace SysBot.Pokemon
             Log("Identifying trainer data of the host console.");
             var sav = await IdentifyTrainer(token).ConfigureAwait(false);
 
+            Log("Detaching on startup.");
+            await Connection.SendAsync(SwitchCommand.DetachController(), token).ConfigureAwait(false);
+            await Task.Delay(0_200, token).ConfigureAwait(false);
+            await Click(A, 0_100, token).ConfigureAwait(false);
+
             Log("Turning off screen.");
             await SetScreen(false, token).ConfigureAwait(false);
 

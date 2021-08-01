@@ -38,6 +38,7 @@ namespace SysBot.Pokemon
         // Link Trade Offsets
         public const uint LinkTradePartnerPokemonOffset = 0xAF286078;
         public const uint LinkTradePartnerNameOffset = 0xAF28384C;
+        public const uint LinkTradePartnerIdentityOffset = LinkTradePartnerNameOffset - 0x8;
         public const uint LinkTradeSearchingOffset = 0x2F76C3C8;
 
         // Suprise Trade Offsets
@@ -51,6 +52,7 @@ namespace SysBot.Pokemon
         public const uint SurpriseTradeSearch_Searching = 0x01000000;
         public const uint SurpriseTradeSearch_Found = 0x0200012C;
         public const uint SurpriseTradePartnerNameOffset = 0x45067708;
+        public const uint SurpriseTradePartnerIdentityOffset = SurpriseTradePartnerNameOffset - 0x8;
 
         /* Wild Area Daycare */
         public const uint DayCare_Wildarea_Step_Counter = 0x4511FC54;
@@ -125,6 +127,16 @@ namespace SysBot.Pokemon
                 SwordShieldDaycare.WildArea => DayCare_Wildarea_Egg_Is_Ready,
                 SwordShieldDaycare.Route5 => DayCare_Route5_Egg_Is_Ready,
                 _ => throw new ArgumentException(nameof(daycare)),
+            };
+        }
+
+        public static uint GetTrainerTrashOffset(TradeMethod tradeMethod)
+        {
+            return tradeMethod switch
+            {
+                TradeMethod.LinkTrade => LinkTradePartnerIdentityOffset,
+                TradeMethod.SupriseTrade => SurpriseTradePartnerIdentityOffset,
+                _ => throw new ArgumentException(nameof(tradeMethod)),
             };
         }
     }

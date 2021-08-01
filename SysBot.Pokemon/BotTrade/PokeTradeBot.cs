@@ -263,8 +263,9 @@ namespace SysBot.Pokemon
             await Task.Delay(5_500, token).ConfigureAwait(false); // necessary delay to get to the box properly
 
             var TrainerName = await GetTradePartnerName(TradeMethod.LinkTrade, token).ConfigureAwait(false);
+            var TrainerTrash = await GetTradePartnerTrash(TradeMethod.LinkTrade, token).ConfigureAwait(false);
             TrainerName = TrainerName.Replace('&', '+');
-            Log($"Found Trading Partner: {TrainerName}...");
+            Log($"Found Trading Partner: {TrainerName}-{TrainerTrash} ({poke.Trainer.TrainerName})...");
 
             if (!await IsInBox(token).ConfigureAwait(false))
             {

@@ -263,9 +263,9 @@ namespace SysBot.Pokemon
             await Task.Delay(5_500, token).ConfigureAwait(false); // necessary delay to get to the box properly
 
             var TrainerName = await GetTradePartnerName(TradeMethod.LinkTrade, token).ConfigureAwait(false);
-            var TrainerTrash = await GetTradePartnerTrash(TradeMethod.LinkTrade, token).ConfigureAwait(false);
+            var TrainerID = await GetTradePartnerIdentity(TradeMethod.LinkTrade, token).ConfigureAwait(false);
             TrainerName = TrainerName.Replace('&', '+');
-            Log($"Found Trading Partner: {TrainerName}-{TrainerTrash} ({poke.Trainer.TrainerName})...");
+            Log($"Found Trading Partner: {TrainerName}-{TrainerID[..4]}-{TrainerID[4..]} ({poke.Trainer.TrainerName})...");
 
             if (!await IsInBox(token).ConfigureAwait(false))
             {
@@ -280,7 +280,7 @@ namespace SysBot.Pokemon
                     await Click(A, 0_500, token).ConfigureAwait(false);
             }
 
-            poke.SendNotification(this, $"Found Trading Partner: {TrainerName}. Waiting for a Pokémon...");
+            poke.SendNotification(this, $"Found Trading Partner: {TrainerName} SID: {TrainerID[..4]} TID: {TrainerID[4..]}. Waiting for a Pokémon...");
 
             if (poke.Type == PokeTradeType.Dump)
                 return await ProcessDumpTradeAsync(poke, token).ConfigureAwait(false);

@@ -130,7 +130,7 @@ namespace SysBot.Pokemon
             };
         }
 
-        public static uint GetTrainerTrashOffset(TradeMethod tradeMethod)
+        public static uint GetTrainerIdentityOffset(TradeMethod tradeMethod)
         {
             return tradeMethod switch
             {

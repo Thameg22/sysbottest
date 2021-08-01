@@ -188,12 +188,12 @@ namespace SysBot.Pokemon
             return StringConverter.GetString7(data, 0, 26);
         }
 
-        public async Task<string> GetTradePartnerTrash(TradeMethod tradeMethod, CancellationToken token)
+        public async Task<string> GetTradePartnerIdentity(TradeMethod tradeMethod, CancellationToken token)
         {
-            var ofs = GetTrainerTrashOffset(tradeMethod);
+            var ofs = GetTrainerIdentityOffset(tradeMethod);
             var data = await Connection.ReadBytesAsync(ofs, 4, token).ConfigureAwait(false);
-            var dataAsInt = BitConverter.ToInt32(data, 0);
-            return dataAsInt.ToString("X");
+            var sidtid = BitConverter.ToUInt32(data, 0).ToString().PadLeft(10, '0');
+            return sidtid;
         }
 
         public async Task<bool> IsGameConnectedToYComm(CancellationToken token)

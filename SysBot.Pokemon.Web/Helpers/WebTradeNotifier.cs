@@ -56,7 +56,7 @@ namespace SysBot.Pokemon.Web
 
         public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, string message)
         {
-            if (message.TryStringBetweenStrings("Trading Partner: ", ". Waiting for", out var trainerName))
+            if (message.TryStringBetweenStrings("Trading Partner: ", " SID:", out var trainerName))
             {
                 OtherTrainer = trainerName;
                 NotifyServerOfState(WebTradeState.FoundTrainer, new KeyValuePair<string, string>("option", trainerName));

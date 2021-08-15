@@ -59,6 +59,12 @@ namespace SysBot.Base
             await Connection.SendAsync(SwitchCommand.SetScreen(on, UseCRLF), token).ConfigureAwait(false);
         }
 
+        public async Task Type(HidKeyboardKey key, int delay, CancellationToken token)
+        {
+            await Connection.SendAsync(SwitchCommand.TypeKey(key, UseCRLF), token).ConfigureAwait(false);
+            await Task.Delay(delay, token).ConfigureAwait(false);
+        }
+
         public async Task EchoCommands(bool value, CancellationToken token)
         {
             var cmd = SwitchCommand.Configure(SwitchConfigureParameter.echoCommands, value ? 1 : 0, UseCRLF);

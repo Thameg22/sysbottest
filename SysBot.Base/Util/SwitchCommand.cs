@@ -95,8 +95,16 @@ namespace SysBot.Base
         /// </summary>
         /// <param name="key">Keyboard key to type</param>
         /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
-        /// <returns></returns>
+        /// <returns>Encoded command bytes</returns>
         public static byte[] TypeKey(HidKeyboardKey key, bool crlf = true) => Encode($"key {(int)key}", crlf);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="keys">Keyboard keys to type<</param>
+        /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
+        /// <returns>Encoded command bytes</returns>
+        public static byte[] TypeMultipleKeys(HidKeyboardKey[] keys, bool crlf = true) => Encode($"key{string.Concat(keys.Select(z => $" {(int)z}"))}", crlf);
 
         /* 
          *

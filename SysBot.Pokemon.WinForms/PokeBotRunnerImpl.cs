@@ -12,32 +12,27 @@ namespace SysBot.Pokemon
     /// <summary>
     /// Bot Environment implementation with Integrations added.
     /// </summary>
-    public class PokeBotRunnerImpl : PokeBotRunner
+    public class PokeBotRunnerImpl<T> : PokeBotRunner<T> where T : PKM, new()
     {
-        public PokeBotRunnerImpl(PokeTradeHub<PK8> hub) : base(hub) { }
-        public PokeBotRunnerImpl(PokeTradeHubConfig config) : base(config) { }
+        public PokeBotRunnerImpl(PokeTradeHub<T> hub, BotFactory<T> fac) : base(hub, fac) { }
+        public PokeBotRunnerImpl(PokeTradeHubConfig config, BotFactory<T> fac) : base(config, fac) { }
 
-        private static TwitchBot? Twitch;
-        private static YouTubeBot? YouTube;
-        private static WebBot? Web;
+        private TwitchBot<T>? Twitch;
+        private YouTubeBot<T>? YouTube;
+        private static WebBot<T>? Web;
 
         protected override void AddIntegrations()
         {
-            if (!string.IsNullOrWhiteSpace(Hub.Config.Discord.Token))
-                AddDiscordBot(Hub.Config.Discord.Token);
-
-            if (!string.IsNullOrWhiteSpace(Hub.Config.Twitch.Token))
-                AddTwitchBot(Hub.Config.Twitch);
-
-            if (!string.IsNullOrWhiteSpace(Hub.Config.YouTube.ClientID))
-                AddYouTubeBot(Hub.Config.YouTube);
-
-            if (!string.IsNullOrWhiteSpace(Hub.Config.Web.URIEndpoint))
-                AddWebBot(Hub.Config.Web);
+            AddDiscordBot(Hub.Config.Discord.Token);
+            AddTwitchBot(Hub.Config.Twitch);
+            AddYouTubeBot(Hub.Config.YouTube);
+            AddWebBot(Hub.Config.Web);
         }
 
         private void AddTwitchBot(TwitchSettings config)
         {
+            if (string.IsNullOrWhiteSpace(config.Token))
+                return;
             if (Twitch != null)
                 return; // already created
 
@@ -48,13 +43,15 @@ namespace SysBot.Pokemon
             if (string.IsNullOrWhiteSpace(config.Token))
                 return;
 
-            Twitch = new TwitchBot(Hub.Config.Twitch, Hub);
+            Twitch = new TwitchBot<T>(Hub.Config.Twitch, Hub);
             if (Hub.Config.Twitch.DistributionCountDown)
                 Hub.BotSync.BarrierReleasingActions.Add(() => Twitch.StartingDistribution(config.MessageStart));
         }
 
         private void AddYouTubeBot(YouTubeSettings config)
         {
+            if (string.IsNullOrWhiteSpace(config.ClientID))
+                return;
             if (YouTube != null)
                 return; // already created
 
@@ -66,26 +63,29 @@ namespace SysBot.Pokemon
             if (string.IsNullOrWhiteSpace(config.ClientSecret))
                 return;
 
-            YouTube = new YouTubeBot(Hub.Config.YouTube, Hub);
+            YouTube = new YouTubeBot<T>(Hub.Config.YouTube, Hub);
             Hub.BotSync.BarrierReleasingActions.Add(() => YouTube.StartingDistribution(config.MessageStart));
+        }
+
+        private void AddDiscordBot(string apiToken)
+        {
+            if (string.IsNullOrWhiteSpace(apiToken))
+                return;
+            var bot = new SysCord<T>(this);
+            Task.Run(() => bot.MainAsync(apiToken, CancellationToken.None));
         }
 
         private void AddWebBot(WebSettings config)
         {
+            if (string.IsNullOrWhiteSpace(config.URIEndpoint))
+                return;
             if (Web != null)
                 return; // already created
 
             if (string.IsNullOrEmpty(config.URIEndpoint))
                 return;
 
-            Web = new WebBot(Hub.Config.Web, Hub);
-        }
-
-        private void AddDiscordBot(string apiToken)
-        {
-            SysCordInstance.Runner = this;
-            var bot = new SysCord(Hub);
-            Task.Run(() => bot.MainAsync(apiToken, CancellationToken.None));
+            Web = new WebBot<T>(Hub.Config.Web, Hub);
         }
     }
 }

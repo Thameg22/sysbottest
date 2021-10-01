@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace SysBot.Base
@@ -91,7 +92,7 @@ namespace SysBot.Base
          */
 
         /// <summary>
-        /// 
+        /// Types a keyboard key.
         /// </summary>
         /// <param name="key">Keyboard key to type</param>
         /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
@@ -99,12 +100,12 @@ namespace SysBot.Base
         public static byte[] TypeKey(HidKeyboardKey key, bool crlf = true) => Encode($"key {(int)key}", crlf);
 
         /// <summary>
-        /// 
+        /// Types multiple keyboard keys.
         /// </summary>
-        /// <param name="keys">Keyboard keys to type<</param>
+        /// <param name="keys">Keyboard keys to type</param>
         /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
         /// <returns>Encoded command bytes</returns>
-        public static byte[] TypeMultipleKeys(HidKeyboardKey[] keys, bool crlf = true) => Encode($"key{string.Concat(keys.Select(z => $" {(int)z}"))}", crlf);
+        public static byte[] TypeMultipleKeys(IEnumerable<HidKeyboardKey> keys, bool crlf = true) => Encode($"key{string.Concat(keys.Select(z => $" {(int)z}"))}", crlf);
 
         /* 
          *
@@ -200,6 +201,12 @@ namespace SysBot.Base
         /// <returns>Encoded command bytes</returns>
         public static byte[] GetBuildID(bool crlf = true) => Encode("getBuildID", crlf);
 
-        public static byte[] SetScreen(bool on, bool crlf = true) => Encode($"screen{(on ? "On" : "Off")}", crlf);
+        /// <summary>
+        /// Toggles the screen display On/Off, useful for saving power if not needed.
+        /// </summary>
+        /// <param name="state">Screen state ON</param>
+        /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
+        /// <returns>Encoded command bytes</returns>
+        public static byte[] SetScreen(ScreenState state, bool crlf = true) => Encode($"screen{(state == ScreenState.On ? "On" : "Off")}", crlf);
     }
 }

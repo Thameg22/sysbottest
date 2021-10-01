@@ -116,7 +116,7 @@ namespace SysBot.Pokemon.Twitter
             var detail = new PokeTradeDetail<PK8>(pk8, trainer, notifier, tt, code, sig == RequestSignificance.Favored);
             var trade = new TradeEntry<PK8>(detail, userID, type, name);
 
-            var added = Info.AddToTradeQueue(trade, userID, sig == RequestSignificance.Sudo);
+            var added = Info.AddToTradeQueue(trade, userID, sig == RequestSignificance.Favored);
 
             if (added == QueueResultAdd.AlreadyInQueue)
             {

@@ -10,28 +10,25 @@ namespace SysBot.Pokemon.ConsoleApp
     /// <summary>
     /// Bot Environment implementation with Integrations added.
     /// </summary>
-    public class PokeBotRunnerImpl : PokeBotRunner
+    public class PokeBotRunnerImpl<T> : PokeBotRunner<T> where T : PKM, new()
     {
-        public PokeBotRunnerImpl(PokeTradeHub<PK8> hub) : base(hub) { }
-        public PokeBotRunnerImpl(PokeTradeHubConfig config) : base(config) { }
+        public PokeBotRunnerImpl(PokeTradeHub<T> hub, BotFactory<T> fac) : base(hub, fac) { }
+        public PokeBotRunnerImpl(PokeTradeHubConfig config, BotFactory<T> fac) : base(config, fac) { }
 
-        private static TwitchBot? Twitch;
-        private static WebBot? Web;
+        private static TwitchBot<T>? Twitch;
+        private static WebBot<T>? Web;
 
         protected override void AddIntegrations()
         {
-            if (!string.IsNullOrWhiteSpace(Hub.Config.Discord.Token))
-                AddDiscordBot(Hub.Config.Discord.Token);
-
-            if (!string.IsNullOrWhiteSpace(Hub.Config.Twitch.Token))
-                AddTwitchBot(Hub.Config.Twitch);
-
-            if (!string.IsNullOrWhiteSpace(Hub.Config.Web.URIEndpoint))
-                AddWebBot(Hub.Config.Web);
+            AddDiscordBot(Hub.Config.Discord);
+            AddTwitchBot(Hub.Config.Twitch);
+            AddWebBot(Hub.Config.Web);
         }
 
         private void AddTwitchBot(TwitchSettings config)
         {
+            if (string.IsNullOrWhiteSpace(config.Token))
+                return;
             if (Twitch != null)
                 return; // already created
 
@@ -42,27 +39,32 @@ namespace SysBot.Pokemon.ConsoleApp
             if (string.IsNullOrWhiteSpace(config.Token))
                 return;
 
-            Twitch = new TwitchBot(Hub.Config.Twitch, Hub);
-            if (Hub.Config.Twitch.DistributionCountDown)
+            Twitch = new TwitchBot<T>(config, Hub);
+            if (config.DistributionCountDown)
                 Hub.BotSync.BarrierReleasingActions.Add(() => Twitch.StartingDistribution(config.MessageStart));
+        }
+
+        private void AddDiscordBot(DiscordSettings config)
+        {
+            var token = config.Token;
+            if (string.IsNullOrWhiteSpace(token))
+                return;
+
+            var bot = new SysCord<T>(this);
+            Task.Run(() => bot.MainAsync(token, CancellationToken.None), CancellationToken.None);
         }
 
         private void AddWebBot(WebSettings config)
         {
+            if (string.IsNullOrWhiteSpace(config.URIEndpoint))
+                return;
             if (Web != null)
                 return; // already created
 
             if (string.IsNullOrEmpty(config.URIEndpoint))
                 return;
 
-            Web = new WebBot(Hub.Config.Web, Hub);
-        }
-
-        private void AddDiscordBot(string apiToken)
-        {
-            SysCordInstance.Runner = this;
-            var bot = new SysCord(Hub);
-            Task.Run(() => bot.MainAsync(apiToken, CancellationToken.None));
+            Web = new WebBot<T>(Hub.Config.Web, Hub);
         }
     }
 }

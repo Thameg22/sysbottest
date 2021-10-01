@@ -35,15 +35,15 @@ namespace SysBot.Pokemon.Twitter
             LogUtil.LogText($"Created trade details for {Username} - {Code}");
         }
 
-        public Action<PokeRoutineExecutor>? OnFinish { private get; set; }
+        public Action<PokeRoutineExecutor<T>>? OnFinish { private get; set; }
 
-        public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, string message)
+        public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
         {
             // Eat generic messages
             LogUtil.LogText(message);
         }
 
-        public void TradeCanceled(PokeRoutineExecutor routine, PokeTradeDetail<T> info, PokeTradeResult msg)
+        public void TradeCanceled(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeResult msg)
         {
             OnFinish?.Invoke(routine);
             var line = $"@{info.Trainer.TrainerName}: Trade canceled, {msg}";
@@ -51,7 +51,7 @@ namespace SysBot.Pokemon.Twitter
             SendMessage(line);
         }
 
-        public void TradeFinished(PokeRoutineExecutor routine, PokeTradeDetail<T> info, T result)
+        public void TradeFinished(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result)
         {
             // Eat success messages
             OnFinish?.Invoke(routine);
@@ -60,7 +60,7 @@ namespace SysBot.Pokemon.Twitter
             LogUtil.LogText(message);
         }
 
-        public void TradeInitialize(PokeRoutineExecutor routine, PokeTradeDetail<T> info)
+        public void TradeInitialize(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
         {
             var receive = Data.Species == 0 ? string.Empty : $" ({Data.Nickname})";
             var msg = $"@{info.Trainer.TrainerName} (ID: {info.ID}): Initializing trade{receive} with you. Your trade code is: {info.Code:0000 0000}";
@@ -68,7 +68,7 @@ namespace SysBot.Pokemon.Twitter
             SendMessage(msg);
         }
 
-        public void TradeSearching(PokeRoutineExecutor routine, PokeTradeDetail<T> info)
+        public void TradeSearching(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
         {
             var name = Info.TrainerName;
             var trainer = string.IsNullOrEmpty(name) ? string.Empty : $", @{name}";
@@ -77,7 +77,7 @@ namespace SysBot.Pokemon.Twitter
             SendMessage($"@{info.Trainer.TrainerName} {message}");
         }
 
-        public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, PokeTradeSummary message)
+        public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeSummary message)
         {
             // Eat generic notifications
             var msg = message.Summary;
@@ -86,7 +86,7 @@ namespace SysBot.Pokemon.Twitter
             LogUtil.LogText(msg);
         }
 
-        public void SendNotification(PokeRoutineExecutor routine, PokeTradeDetail<T> info, T result, string message)
+        public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result, string message)
         {
             // Eat end detail messages
             var msg = $"Details for {result.FileName}: " + message;

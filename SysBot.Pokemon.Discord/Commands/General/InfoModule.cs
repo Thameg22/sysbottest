@@ -16,8 +16,8 @@ namespace SysBot.Pokemon.Discord
     // Copyright 2017, Christopher F. <foxbot@protonmail.com>
     public class InfoModule : ModuleBase<SocketCommandContext>
     {
-        private const string detail = "I am an open source Discord bot powered by PKHeX.Core and other open source software, with some improvements and web functionality added by Berichan.";
-        private const string repo = "https://github.com/berichan/SysBot.NET";
+        private const string detail = "I am an open-source Discord bot powered by PKHeX.Core and other open-source software.";
+        private const string repo = "https://github.com/kwsch/SysBot.NET";
 
         [Command("info")]
         [Alias("about", "whoami", "owner")]
@@ -47,7 +47,7 @@ namespace SysBot.Pokemon.Discord
                 $"- {Format.Bold("Heap Size")}: {GetHeapSize()}MiB\n" +
                 $"- {Format.Bold("Guilds")}: {Context.Client.Guilds.Count}\n" +
                 $"- {Format.Bold("Channels")}: {Context.Client.Guilds.Sum(g => g.Channels.Count)}\n" +
-                $"- {Format.Bold("Users")}: {Context.Client.Guilds.Sum(g => g.Users.Count)}\n"
+                $"- {Format.Bold("Users")}: {Context.Client.Guilds.Sum(g => g.MemberCount)}\n"
                 );
 
             await ReplyAsync("Here's a bit about me!", embed: builder.Build()).ConfigureAwait(false);

@@ -38,7 +38,7 @@ namespace SysBot.Base
             if (Connected)
                 Disconnect();
 
-            Connection = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            InitializeSocket();
             Log("Connecting to device...");
             var address = Dns.GetHostAddresses(ip);
             foreach (IPAddress adr in address)
@@ -56,7 +56,8 @@ namespace SysBot.Base
             Connection.Shutdown(SocketShutdown.Both);
             Connection.BeginDisconnect(true, DisconnectCallback, Connection);
             Connected = false;
-            Log("Disconnected!");
+            Log("Disconnected! Resetting Socket.");
+            InitializeSocket();
         }
 
         private readonly AutoResetEvent connectionDone = new(false);
@@ -147,7 +148,7 @@ namespace SysBot.Base
                 var cmd = method(offset + (uint)i, len);
                 var bytes = await ReadBytesFromCmdAsync(cmd, len, token).ConfigureAwait(false);
                 bytes.CopyTo(result, i);
-                await Task.Delay(MaximumTransferSize / DelayFactor + BaseDelay, token).ConfigureAwait(false);
+                await Task.Delay((MaximumTransferSize / DelayFactor) + BaseDelay, token).ConfigureAwait(false);
             }
             return result;
         }
@@ -167,7 +168,7 @@ namespace SysBot.Base
                 var slice = data.SliceSafe(i, MaximumTransferSize);
                 var cmd = method(offset + (uint)i, slice);
                 await SendAsync(cmd, token).ConfigureAwait(false);
-                await Task.Delay(MaximumTransferSize / DelayFactor + BaseDelay, token).ConfigureAwait(false);
+                await Task.Delay((MaximumTransferSize / DelayFactor) + BaseDelay, token).ConfigureAwait(false);
             }
         }
 

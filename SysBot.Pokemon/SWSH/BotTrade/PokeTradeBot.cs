@@ -242,29 +242,35 @@ namespace SysBot.Pokemon
             Log("Opening Y-Comm menu.");
             await Click(Y, 2_000, token).ConfigureAwait(false);
 
+            Log("Selecting Link Trade.");
             await Click(A, 1_500, token).ConfigureAwait(false);
 
-            await Click(DDOWN, 500, token).ConfigureAwait(false);
-
-            for (int i = 0; i < 2; i++)
-                await Click(A, 1_500, token).ConfigureAwait(false);
-
-            // All other languages require an extra A press at this menu.
-            if (GameLang != LanguageID.English && GameLang != LanguageID.Spanish)
-                await Click(A, 1_500, token).ConfigureAwait(false);
-
-            // Loading Screen
             if (poke.Type != PokeTradeType.Random)
-                Hub.Config.Stream.StartEnterCode(this);
-            await Task.Delay(Hub.Config.Timings.ExtraTimeOpenCodeEntry, token).ConfigureAwait(false);
+            {
+                Log("Selecting Link Trade code.");
+                await Click(DDOWN, 500, token).ConfigureAwait(false);
 
-            var code = poke.Code;
-            Log($"Entering Link Trade code: {code:0000 0000}...");
-            await EnterLinkCode(code, Hub.Config, token).ConfigureAwait(false);
+                for (int i = 0; i < 2; i++)
+                    await Click(A, 1_500, token).ConfigureAwait(false);
 
-            // Wait for Barrier to trigger all bots simultaneously.
-            WaitAtBarrierIfApplicable(token);
-            await Click(PLUS, 1_000, token).ConfigureAwait(false);
+                // All other languages require an extra A press at this menu.
+                if (GameLang != LanguageID.English && GameLang != LanguageID.Spanish)
+                    await Click(A, 1_500, token).ConfigureAwait(false);
+
+                // Loading Screen
+                if (poke.Type != PokeTradeType.Random)
+                    Hub.Config.Stream.StartEnterCode(this);
+                await Task.Delay(Hub.Config.Timings.ExtraTimeOpenCodeEntry, token).ConfigureAwait(false);
+
+                var code = poke.Code;
+                Log($"Entering Link Trade code: {code:0000 0000}...");
+                poke.SendNotification(this, $"Entering Link Trade Code: {code:0000 0000}...");
+                await EnterLinkCode(code, Hub.Config, token).ConfigureAwait(false);
+
+                // Wait for Barrier to trigger all bots simultaneously.
+                WaitAtBarrierIfApplicable(token);
+                await Click(PLUS, 1_000, token).ConfigureAwait(false);
+            }
 
             Hub.Config.Stream.EndEnterCode(this);
 
@@ -363,9 +369,23 @@ namespace SysBot.Pokemon
             (toSend, update) = await GetEntityToSend(sav, poke, offered, oldEC, toSend, poke.Type == PokeTradeType.Seed ? itemReq : null, token).ConfigureAwait(false);
             if (update != PokeTradeResult.Success)
             {
+                if (itemReq != SpecialTradeType.None)
+                {
+                    poke.SendNotification(this, "SSRYour request isn't legal. Please try a different Pokémon or request.");
+                    if (!string.IsNullOrWhiteSpace(Hub.Config.Web.URIEndpoint))
+                        AddToPlayerLimit(TrainerName, -1);
+                }
+
                 await ExitTrade(Hub.Config, false, token).ConfigureAwait(false);
                 return update;
             }
+
+            if (itemReq == SpecialTradeType.WonderCard)
+                poke.SendNotification(this, "SSRDistribution success!");
+            else if (itemReq != SpecialTradeType.None && itemReq != SpecialTradeType.Shinify)
+                poke.SendNotification(this, "SSRSpecial request successful!");
+            else if (itemReq == SpecialTradeType.Shinify)
+                poke.SendNotification(this, "SSRShinify success! Thanks for being part of the community!");
 
             var tradeResult = await ConfirmAndStartTrading(poke, token).ConfigureAwait(false);
             if (tradeResult != PokeTradeResult.Success)
@@ -538,7 +558,8 @@ namespace SysBot.Pokemon
             {
                 PokeTradeType.Random => await HandleRandomLedy(sav, poke, offered, toSend, token).ConfigureAwait(false),
                 PokeTradeType.Clone => await HandleClone(sav, poke, offered, oldEC, token).ConfigureAwait(false),
-                PokeTradeType.SpecialRequest when stt is not SpecialTradeType.WonderCard => await HandleClone(sav, poke, offered, oldEC, token).ConfigureAwait(false),
+                PokeTradeType.Seed when stt is not SpecialTradeType.WonderCard => await HandleClone(sav, poke, offered, oldEC, token).ConfigureAwait(false),
+                PokeTradeType.Seed when stt is SpecialTradeType.WonderCard => await JustInject(sav, offered, token).ConfigureAwait(false),
                 _ => (toSend, PokeTradeResult.Success),
             };
         }
@@ -621,6 +642,17 @@ namespace SysBot.Pokemon
             }
 
             return (toSend, PokeTradeResult.Success);
+        }
+
+        private async Task<(PK8 toSend, PokeTradeResult check)> JustInject(SAV8SWSH sav, PK8 offered, CancellationToken token)
+        {
+            await Click(A, 0_800, token).ConfigureAwait(false);
+            await SetBoxPokemon(offered, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
+
+            for (int i = 0; i < 5; i++)
+                await Click(A, 0_500, token).ConfigureAwait(false);
+
+            return (offered, PokeTradeResult.Success);
         }
 
         protected virtual async Task<bool> IsUserBeingShifty(PokeTradeDetail<PK8> detail, CancellationToken token)

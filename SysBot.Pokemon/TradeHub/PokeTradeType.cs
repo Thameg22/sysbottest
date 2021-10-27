@@ -6,7 +6,6 @@
         Specific,
         Seed,
         Clone,
-        Dump,
-        SpecialRequest
+        Dump
     }
 }

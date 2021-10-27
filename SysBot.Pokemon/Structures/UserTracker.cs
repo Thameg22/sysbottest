@@ -27,23 +27,9 @@ namespace SysBot.Pokemon
                 return InsertReplace(networkID, name);
         }
 
-        private TrackedUser? InsertReplace(ulong networkID, string name)
+        private TrackedUser? InsertReplace(ulong networkID, string name, ulong remoteID = 0)
         {
-            var index = Users.FindIndex(z => z.ID == networkID);
-            if (index < 0)
-            {
-                Insert(networkID, name, 0);
-                return null;
-            }
-
-            var match = Users[index];
-            Users[index] = new TrackedUser(networkID, name, 0);
-            return match;
-        }
-
-        private TrackedUser? InsertReplace(ulong networkID, string name, ulong remoteID)
-        {
-            var index = Users.FindIndex(z => z.ID == networkID);
+            var index = Users.FindIndex(z => z.NetworkID == networkID);
             if (index < 0)
             {
                 Insert(networkID, name, remoteID);
@@ -51,13 +37,8 @@ namespace SysBot.Pokemon
             }
 
             var match = Users[index];
-            if (match.RemoteID != remoteID) // different user triggered this
-            {
-                Users[index] = new TrackedUser(networkID, name, remoteID);
-                return match;
-            }
-
-            return null;
+            Users[index] = new TrackedUser(networkID, name, remoteID);
+            return match;
         }
 
         private void Insert(ulong id, string name, ulong remoteID)
@@ -76,7 +57,7 @@ namespace SysBot.Pokemon
         public TrackedUser? TryGetPrevious(ulong trainerNid)
         {
             lock (_sync)
-                return Users.Find(z => z.ID == trainerNid);
+                return Users.Find(z => z.NetworkID == trainerNid);
         }
     }
 
@@ -84,12 +65,12 @@ namespace SysBot.Pokemon
     {
         public readonly string Name;
         public readonly ulong RemoteID;
-        public readonly ulong ID;
+        public readonly ulong NetworkID;
         public readonly DateTime Time;
 
-        public TrackedUser(ulong id, string name, ulong remoteID)
+        public TrackedUser(ulong NetworkID, string name, ulong remoteID)
         {
-            ID = id;
+            this.NetworkID = NetworkID;
             Name = name;
             RemoteID = remoteID;
             Time = DateTime.Now;

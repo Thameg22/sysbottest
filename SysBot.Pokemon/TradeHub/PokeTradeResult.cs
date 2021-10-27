@@ -7,12 +7,15 @@
         // Trade Partner Failures
         NoTrainerFound,
         TrainerTooSlow,
+        TrainerRequestBad,
         IllegalTrade,
         SuspiciousActivity,
 
         // Recovery -- General Bot Failures
         // Anything below here should be retried once if possible.
-        Aborted,
+        RoutineCancel,
+        ExceptionConnection,
+        ExceptionInternal,
         RecoverStart,
         RecoverPostLinkCode,
         RecoverOpenBox,
@@ -21,6 +24,6 @@
 
     public static class PokeTradeResultExtensions
     {
-        public static bool ShouldAttemptRetry(this PokeTradeResult t) => t >= PokeTradeResult.Aborted;
+        public static bool ShouldAttemptRetry(this PokeTradeResult t) => t >= PokeTradeResult.RoutineCancel;
     }
 }

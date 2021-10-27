@@ -16,7 +16,7 @@ namespace SysBot.Pokemon
         [Category(Network), Description("The Auth Token or Password")]
         public string AuthTokenOrString { get; set; } = string.Empty;
 
-        [Category(Network), Description("The Index (if any) to use for web encoded queue names, this will add the number to end of the queue identifier.")]
+        [Category(Network), Description("The index (if any)")]
         public int QueueIndex { get; set; } = -1;
     }
 }

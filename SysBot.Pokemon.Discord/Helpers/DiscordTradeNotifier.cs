@@ -43,7 +43,7 @@ namespace SysBot.Pokemon.Discord
             OnFinish?.Invoke(routine);
             Trader.SendMessageAsync($"Trade canceled: {msg}").ConfigureAwait(false);
             if (msg == PokeTradeResult.NoTrainerFound)
-                CommandSentChannel.SendMessageAsync($"{Trader.Mention} - Something happened with your trade: {msg}. This has been reported.");
+                CommandSentChannel.SendMessageAsync($"{Trader.Mention} - Something happened with your trade: {msg}. Your request has been removed");
         }
 
         public void TradeFinished(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result)
@@ -58,7 +58,7 @@ namespace SysBot.Pokemon.Discord
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
         {
-            Trader.SendMessageAsync(message).ConfigureAwait(false);
+            Trader.SendMessageAsync(message.TrimStart("SSR")).ConfigureAwait(false);
         }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeSummary message)

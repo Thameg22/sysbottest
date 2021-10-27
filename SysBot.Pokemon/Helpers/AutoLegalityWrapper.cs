@@ -1,4 +1,5 @@
-﻿using PKHeX.Core;
+﻿using System;
+using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 using System.IO;
 using System.Threading;
@@ -83,7 +84,31 @@ namespace SysBot.Pokemon
 
         public static bool CanBeTraded(this PKM pkm)
         {
+            if (pkm.IsNicknamed && StringsUtil.IsSpammyString(pkm.Nickname))
+                return false;
+            if (StringsUtil.IsSpammyString(pkm.OT_Name) && !IsFixedOT(new LegalityAnalysis(pkm).EncounterOriginal, pkm))
+                return false;
             return !FormInfo.IsFusedForm(pkm.Species, pkm.Form, pkm.Format);
+        }
+
+        public static bool IsFixedOT(IEncounterTemplate t, PKM pkm) => t switch
+        {
+            EncounterTrade tr => tr.HasTrainerName,
+            MysteryGift g => !g.EggEncounter && g switch
+            {
+                WC8 wc8 => wc8.GetHasOT(pkm.Language),
+                { Generation: >= 5 } gift => gift.OT_Name.Length > 0,
+                _ => true,
+            },
+            _ => false,
+        };
+
+        public static ITrainerInfo GetTrainerInfo<T>() where T : PKM, new()
+        {
+            if (typeof(T) == typeof(PK8))
+                return TrainerSettings.GetSavedTrainerData(GameVersion.SWSH, 8);
+
+            throw new ArgumentException("Type does not have a recognized trainer fetch.", typeof(T).Name);
         }
 
         public static ITrainerInfo GetTrainerInfo(int gen) => TrainerSettings.GetSavedTrainerData(gen);

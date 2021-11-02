@@ -321,8 +321,19 @@ namespace SysBot.Pokemon
             var TrainerNID = await GetTradePartnerNID(token).ConfigureAwait(false);
             RecordUtil<PokeTradeBot>.Record($"Initiating\t{TrainerNID:X16}\t{TrainerName}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
 
-            var TrainerID = await GetTradePartnerIdentification(TradeMethod.LinkTrade, token).ConfigureAwait(false);
+            (var RawHash, var TrainerID) = await GetTradePartnerIdentification(TradeMethod.LinkTrade, token).ConfigureAwait(false);
             TrainerName = TrainerName.Replace('&', '+');
+            
+            bool IsSafe = poke.Trainer.ID == 0 ? true : NewAntiAbuse.Instance.LogUser(RawHash, TrainerNID, poke.Trainer.ID.ToString(), poke.Trainer.TrainerName, Hub.Config.TradeAbuse.MultiAbuseEchoMention);
+            if (!IsSafe)
+            {
+                Log($"Found known abuser: {TrainerName}-{TrainerID[..4]}-{TrainerID[4..]} ({poke.Trainer.TrainerName}) (NID: {TrainerNID})");
+                poke.SendNotification(this, $"Your savedata is associated with a known abuser. Consider not being an abuser, and you will no longer see this message.");
+                await Task.Delay(2_000, token).ConfigureAwait(false);
+                await ExitTrade(Hub.Config, false, token).ConfigureAwait(false);
+                return PokeTradeResult.TrainerTooSlow;
+            }
+
             Log($"Found Trading Partner: {TrainerName}-{TrainerID[..4]}-{TrainerID[4..]} ({poke.Trainer.TrainerName}) (NID: {TrainerNID})");
 
             var partnerCheck = await CheckPartnerReputation(poke, TrainerNID, TrainerName, token).ConfigureAwait(false);
@@ -1069,12 +1080,13 @@ namespace SysBot.Pokemon
             return ((int)((tid | (sid << 16)) % 1000000)).ToString("D6");
         }
 
-        private async Task<string> GetTradePartnerIdentification(TradeMethod tradeMethod, CancellationToken token)
+        private async Task<(uint, string)> GetTradePartnerIdentification(TradeMethod tradeMethod, CancellationToken token)
         {
             var ofs = GetTrainerTIDSIDOffset(tradeMethod);
             var data = await Connection.ReadBytesAsync(ofs, 4, token).ConfigureAwait(false);
-            var sidtid = BitConverter.ToUInt32(data, 0).ToString().PadLeft(10, '0');
-            return sidtid;
+            var sidtidRaw = BitConverter.ToUInt32(data, 0);
+            var sidtid = sidtidRaw.ToString().PadLeft(10, '0');
+            return (sidtidRaw, sidtid);
         }
 
         public async Task<ulong> GetTradePartnerNID(CancellationToken token)

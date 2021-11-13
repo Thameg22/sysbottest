@@ -83,6 +83,18 @@ namespace SysBot.Pokemon.Discord
             await ReplyAsync(Format.Code(msg)).ConfigureAwait(false);
         }
 
+        [Command("removeAlt")]
+        [Alias("removeLog", "rmAlt")]
+        [Summary("Removes an identity (name-id) from the local user-to-trader AntiAbuse database")]
+        [RequireSudo]
+        public async Task RemoveAltAsync([Remainder] string identity)
+        {
+            if (NewAntiAbuse.Instance.Remove(identity))
+                await ReplyAsync($"{identity} has been removed from the database.").ConfigureAwait(false);
+            else
+                await ReplyAsync($"{identity} is not a valid identity.").ConfigureAwait(false);
+        }
+
         private RemoteControlAccess GetReference(IUser channel) => new()
         {
             ID = channel.Id,

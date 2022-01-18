@@ -261,7 +261,7 @@ namespace SysBot.Pokemon
             }
             else if (pk.Nickname.StartsWith("?") || pk.Nickname.StartsWith("？"))
             {
-                var itemLookup = pk.Nickname.Substring(1).Replace(" ", string.Empty);
+                var itemLookup = pk.Nickname[1..].Replace(" ", string.Empty).Replace("poke", "poké").ToLower();
                 GameStrings strings = GameInfo.GetStrings(GameLanguage.DefaultLanguage);
                 var balls = strings.balllist;
 

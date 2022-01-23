@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using PKHeX.Core;
@@ -16,12 +15,6 @@ namespace SysBot.Pokemon
         protected IPokeDataOffsetsBS Offsets { get; private set; } = new PokeDataOffsetsBS_BD();
         protected PokeRoutineExecutor8BS(PokeBotState cfg) : base(cfg)
         {
-        }
-
-        protected async Task PointerPoke(byte[] bytes, IEnumerable<long> jumps, CancellationToken token)
-        {
-            byte[] command = Encoding.UTF8.GetBytes($"pointerPoke 0x{string.Concat(bytes.Select(z => $"{z:X2}"))}{string.Concat(jumps.Select(z => $" {z}"))}\r\n");
-            await SwitchConnection.SendRaw(command, token).ConfigureAwait(false);
         }
 
         public override async Task<PB8> ReadPokemon(ulong offset, CancellationToken token) => await ReadPokemon(offset, BoxFormatSlotSize, token).ConfigureAwait(false);
@@ -64,8 +57,7 @@ namespace SysBot.Pokemon
             }
 
             pkm.ResetPartyStats();
-            var command = SwitchCommand.PokeAbsolute(offset, pkm.EncryptedPartyData);
-            await SwitchConnection.SendRaw(command, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(pkm.EncryptedPartyData, offset, token).ConfigureAwait(false);
         }
 
         public async Task<SAV8BS> IdentifyTrainer(CancellationToken token)
@@ -76,23 +68,36 @@ namespace SysBot.Pokemon
             {
                 BrilliantDiamondID => new PokeDataOffsetsBS_BD(),
                 ShiningPearlID => new PokeDataOffsetsBS_SP(),
-                _ => throw new Exception($"Title for {title} is unknown."),
+                _ => throw new Exception($"{title} is not a valid Pokémon BDSP title. Is your mode correct?"),
             };
 
-            // generate a fake savefile
-            var myStatusOffset = await SwitchConnection.PointerAll(Offsets.MainSavePointer, token).ConfigureAwait(false);
-
-            // we only need config and mystatus regions
-            const ulong offs = 0x79B74;
-            var savMyStatus = await SwitchConnection.ReadBytesAbsoluteAsync(myStatusOffset + offs, 0x40 + 0x50, token).ConfigureAwait(false);
-            var bytes = new byte[offs].Concat(savMyStatus).ToArray();
-
-            var sav = new SAV8BS(bytes);
+            var sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             InitSaveData(sav);
 
-            if (await GetTextSpeed(token).ConfigureAwait(false) != TextSpeedOption.Fast)
-                Log("Text speed should be set to FAST. Stop the bot and fix this if you encounter problems.");
+            if (!IsValidTrainerData())
+                throw new Exception("Trainer data is not valid. Refer to the SysBot.NET wiki for bad or no trainer data.");
+            if (await GetTextSpeed(token).ConfigureAwait(false) < TextSpeedOption.Fast)
+                throw new Exception("Text speed should be set to FAST. Fix this for correct operation.");
 
+            return sav;
+        }
+
+        public async Task<SAV8BS> GetFakeTrainerSAV(CancellationToken token)
+        {
+            var sav = new SAV8BS();
+            var info = sav.MyStatus;
+
+            // Set the OT.
+            var name = await SwitchConnection.PointerPeek(TradePartnerBS.MaxByteLengthStringObject, Offsets.MyStatusTrainerPointer, token).ConfigureAwait(false);
+            info.OT = TradePartnerBS.ReadStringFromRAMObject(name);
+
+            // Set the TID, SID, and Language
+            var id = await SwitchConnection.PointerPeek(4, Offsets.MyStatusTIDPointer, token).ConfigureAwait(false);
+            info.TID = BitConverter.ToUInt16(id, 0);
+            info.SID = BitConverter.ToUInt16(id, 2);
+
+            var lang = await SwitchConnection.PointerPeek(1, Offsets.ConfigLanguagePointer, token).ConfigureAwait(false);
+            sav.Language = lang[0];
             return sav;
         }
 
@@ -146,7 +151,7 @@ namespace SysBot.Pokemon
             Log("Soft ban detected, unbanning.");
             // Write the float value to 0.
             var data = BitConverter.GetBytes(0);
-            await PointerPoke(data, Offsets.UnionWorkPenaltyPointer, token).ConfigureAwait(false);
+            await SwitchConnection.PointerPoke(data, Offsets.UnionWorkPenaltyPointer, token).ConfigureAwait(false);
         }
 
         public async Task<bool> CheckIfSoftBanned(ulong offset, CancellationToken token)
@@ -244,7 +249,7 @@ namespace SysBot.Pokemon
 
         public async Task<TextSpeedOption> GetTextSpeed(CancellationToken token)
         {
-            var data = await SwitchConnection.PointerPeek(1, Offsets.ConfigPointer, token).ConfigureAwait(false);
+            var data = await SwitchConnection.PointerPeek(1, Offsets.ConfigTextSpeedPointer, token).ConfigureAwait(false);
             return (TextSpeedOption)data[0];
         }
     }

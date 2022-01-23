@@ -277,8 +277,8 @@ namespace SysBot.Pokemon
                 return PokeTradeResult.TrainerTooSlow;
 
             var tradePartner = await GetTradePartnerInfo(token).ConfigureAwait(false);
-            var trainerNID = await GetTradePartnerNID(token).ConfigureAwait(false);
-            Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7} (ID: {trainerNID})");
+            //var trainerNID = await GetTradePartnerNID(token).ConfigureAwait(false);
+            Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7}");
 
             await Task.Delay(2_000, token).ConfigureAwait(false);
 
@@ -309,7 +309,7 @@ namespace SysBot.Pokemon
             lastOffered = await SwitchConnection.ReadBytesAbsoluteAsync(LinkTradePokemonOffset, 8, token).ConfigureAwait(false);
 
             PokeTradeResult update;
-            var trainer = new PartnerDataHolder(trainerNID, tradePartner.TrainerName, tradePartner.TID7);
+            var trainer = new PartnerDataHolder(0, tradePartner.TrainerName, tradePartner.TID7);
             (toSend, update) = await GetEntityToSend(sav, poke, offered, toSend, trainer, token).ConfigureAwait(false);
             if (update != PokeTradeResult.Success)
                 return update;
@@ -417,11 +417,18 @@ namespace SysBot.Pokemon
             if (GameLang is not LanguageID.French)
             {
                 await Click(A, 0_050, token).ConfigureAwait(false);
-                await PressAndHold(A, 1_000, 1_000, token).ConfigureAwait(false);
+                await PressAndHold(A, 1_000, 0, token).ConfigureAwait(false);
             }
 
             await Click(A, 0_050, token).ConfigureAwait(false);
-            await PressAndHold(A, 1_500, 1_500, token).ConfigureAwait(false);
+            await PressAndHold(A, 1_500, 0, token).ConfigureAwait(false);
+
+            // Japanese has one extra menu
+            if (GameLang is LanguageID.Japanese)
+            {
+                await Click(A, 0_050, token).ConfigureAwait(false);
+                await PressAndHold(A, 1_000, 0, token).ConfigureAwait(false);
+            }
 
             await Click(A, 1_000, token).ConfigureAwait(false); // Would you like to enter? Screen
 
@@ -432,21 +439,21 @@ namespace SysBot.Pokemon
 
             Log("Connecting to internet.");
             await Click(A, 0_050, token).ConfigureAwait(false);
-            await PressAndHold(A, 2_000, 2_000, token).ConfigureAwait(false);
+            await PressAndHold(A, 2_000, 0, token).ConfigureAwait(false);
 
             // Extra menus.
             if (GameLang is LanguageID.German or LanguageID.Italian or LanguageID.Korean)
             {
                 await Click(A, 0_050, token).ConfigureAwait(false);
-                await PressAndHold(A, 0_750, 0_750, token).ConfigureAwait(false);
+                await PressAndHold(A, 0_750, 0, token).ConfigureAwait(false);
             }
 
             await Click(A, 0_050, token).ConfigureAwait(false);
-            await PressAndHold(A, 1_000, 1_000, token).ConfigureAwait(false);
+            await PressAndHold(A, 1_000, 0, token).ConfigureAwait(false);
             await Click(A, 0_050, token).ConfigureAwait(false);
-            await PressAndHold(A, 1_500, 1_500, token).ConfigureAwait(false);
+            await PressAndHold(A, 1_500, 0, token).ConfigureAwait(false);
             await Click(A, 0_050, token).ConfigureAwait(false);
-            await PressAndHold(A, 1_500, 1_500, token).ConfigureAwait(false);
+            await PressAndHold(A, 1_500, 0, token).ConfigureAwait(false);
 
             // Would you like to save your adventure so far?
             await Click(A, 0_500, token).ConfigureAwait(false);
@@ -455,7 +462,7 @@ namespace SysBot.Pokemon
             Log("Saving the game.");
             // Agree and save the game.
             await Click(A, 0_050, token).ConfigureAwait(false);
-            await PressAndHold(A, 6_500, 6_500, token).ConfigureAwait(false);
+            await PressAndHold(A, 6_500, 0, token).ConfigureAwait(false);
 
             if (tradeType != PokeTradeType.Random)
                 Hub.Config.Stream.StartEnterCode(this);
@@ -495,13 +502,9 @@ namespace SysBot.Pokemon
         {
             Log("Caching session offsets...");
             BoxStartOffset = await SwitchConnection.PointerAll(Offsets.BoxStartPokemonPointer, token).ConfigureAwait(false);
-            await Task.Delay(1_000).ConfigureAwait(false);
             UnionGamingOffset = await SwitchConnection.PointerAll(Offsets.UnionWorkIsGamingPointer, token).ConfigureAwait(false);
-            await Task.Delay(1_000).ConfigureAwait(false);
             UnionTalkingOffset = await SwitchConnection.PointerAll(Offsets.UnionWorkIsTalkingPointer, token).ConfigureAwait(false);
-            await Task.Delay(1_000).ConfigureAwait(false);
             SoftBanOffset = await SwitchConnection.PointerAll(Offsets.UnionWorkPenaltyPointer, token).ConfigureAwait(false);
-            await Task.Delay(1_000).ConfigureAwait(false);
         }
 
         // todo: future

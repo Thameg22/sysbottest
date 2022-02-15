@@ -4,6 +4,7 @@ using NLog.Targets;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace SysBot.Base
 {
@@ -24,6 +25,8 @@ namespace SysBot.Base
                 ArchiveDateFormat = "yyyy-MM-dd",
                 ArchiveAboveSize = 104857600, // 100MB (never)
                 MaxArchiveFiles = 14, // 2 weeks
+                Encoding = Encoding.Unicode,
+                WriteBom = true,
             };
             config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
             LogManager.Configuration = config;
@@ -73,8 +76,13 @@ namespace SysBot.Base
         {
             Logger.Log(LogLevel.Error, $"Exception from {identity}:");
             Logger.Log(LogLevel.Error, exception);
-            while ((exception = exception.InnerException) is { } x)
-                Logger.Log(LogLevel.Error, x);
+
+            var err = exception.InnerException;
+            while (err is not null)
+            {
+                Logger.Log(LogLevel.Error, err);
+                err = err.InnerException;
+            }
         }
     }
 }

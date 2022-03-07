@@ -254,7 +254,7 @@ namespace SysBot.Pokemon
             Log("Selecting Link Trade.");
             await Click(A, 1_500, token).ConfigureAwait(false);
 
-            if (poke.Type != PokeTradeType.Random && poke.Code != 1111_1111)
+            if (!(poke.Type == PokeTradeType.Random && poke.Code == 1111_1111))
             {
                 Log("Selecting Link Trade code.");
                 await Click(DDOWN, 500, token).ConfigureAwait(false);

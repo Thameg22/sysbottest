@@ -103,7 +103,7 @@ namespace SysBot.Pokemon
                         break;
                 }
 
-                pk.SetRecordFlags();
+                pk.SetRecordFlags(Array.Empty<int>());
                 pk.HeldItem = heldItemNew; //free master
 
                 LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);
@@ -145,7 +145,7 @@ namespace SysBot.Pokemon
                 if (!pk.IsEgg)
                 {
                     pk.HeldItem = heldItemNew; //free master
-                    pk.SetRecordFlags();
+                    pk.SetRecordFlags(Array.Empty<int>());
                 }
                 sst = SpecialTradeType.Shinify;
             }
@@ -172,7 +172,7 @@ namespace SysBot.Pokemon
                 if (pk is IHyperTrain iht)
                     iht.HyperTrainClear();
 
-                pk.SetRecordFlags();
+                pk.SetRecordFlags(Array.Empty<int>());
                 pk.HeldItem = heldItemNew; //free master
 
                 LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);
@@ -213,7 +213,7 @@ namespace SysBot.Pokemon
 
                 LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);
 
-                pk.SetRecordFlags();
+                pk.SetRecordFlags(Array.Empty<int>());
                 pk.HeldItem = heldItemNew; //free master
                 sst = SpecialTradeType.SanitizeReq;
             }
@@ -233,7 +233,7 @@ namespace SysBot.Pokemon
                     return sst;
                 }
 
-                pk.SetRecordFlags();
+                pk.SetRecordFlags(Array.Empty<int>());
                 pk.HeldItem = heldItemNew; //free master
 
                 LegalizeIfNotLegal(ref pk, caller, detail, TrainerName);
@@ -345,7 +345,7 @@ namespace SysBot.Pokemon
                 
                 if (!pkloaded.SWSH)
                 {
-                    pkloaded = PKMConverter.ConvertToType(pkloaded, typeof(T), out _);
+                    pkloaded = EntityConverter.ConvertToType(pkloaded, typeof(T), out _);
                     if (pkloaded != null)
                     {
                         pkloaded.CurrentHandler = 1;

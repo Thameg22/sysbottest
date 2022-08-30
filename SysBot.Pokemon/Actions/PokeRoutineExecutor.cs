@@ -52,15 +52,16 @@ namespace SysBot.Pokemon
             return (solved != 0, solved);
         }
 
-        public static void DumpPokemon(string folder, string subfolder, T pk)
+        public static string DumpPokemon(string folder, string subfolder, T pk)
         {
             if (!Directory.Exists(folder))
-                return;
+                return string.Empty;
             var dir = Path.Combine(folder, subfolder);
             Directory.CreateDirectory(dir);
             var fn = Path.Combine(dir, Util.CleanFileName(pk.FileName));
             File.WriteAllBytes(fn, pk.DecryptedPartyData);
             LogUtil.LogInfo($"Saved file: {fn}", "Dump");
+            return fn;
         }
     }
 }

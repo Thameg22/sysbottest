@@ -48,6 +48,9 @@ namespace SysBot.Pokemon
         [Category(Roles), Description("Users with this role are allowed to enter the Dump queue.")]
         public RemoteControlAccessList RoleCanDump { get; set; } = new() { AllowIfEmpty = false };
 
+        [Category(Roles), Description("Users with this role are allowed to enter the EggFetch queue.")]
+        public RemoteControlAccessList RoleCanEgg{ get; set; } = new() { AllowIfEmpty = false };
+
         [Category(Roles), Description("Users with this role are allowed to remotely control the console (if running as Remote Control Bot.")]
         public RemoteControlAccessList RoleRemoteControl { get; set; } = new() { AllowIfEmpty = false };
 
@@ -79,6 +82,9 @@ namespace SysBot.Pokemon
 
         [Category(Channels), Description("Echo channels that will log special messages.")]
         public RemoteControlAccessList EchoChannels { get; set; } = new();
+
+        [Category(Channels), Description("Echo channels that will log special messages with files.")]
+        public RemoteControlAccessList EchoFileChannels { get; set; } = new();
 
         [Category(Operation), Description("Returns PKMs of Pokémon shown in the trade to the user.")]
         public bool ReturnPKMs { get; set; } = true;

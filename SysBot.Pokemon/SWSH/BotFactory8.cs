@@ -16,6 +16,7 @@ namespace SysBot.Pokemon
                 => new PokeTradeBot(Hub, cfg),
 
             PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
+            PokeRoutineType.InteractiveEggFetch => new FancyEggBot(cfg, Hub),
             PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
             PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
             PokeRoutineType.EncounterLine => new EncounterBotLine(cfg, Hub),
@@ -37,6 +38,7 @@ namespace SysBot.Pokemon
                 => true,
 
             PokeRoutineType.EggFetch => true,
+            PokeRoutineType.InteractiveEggFetch => true,
             PokeRoutineType.FossilBot => true,
             PokeRoutineType.RaidBot => true,
             PokeRoutineType.EncounterLine => true,

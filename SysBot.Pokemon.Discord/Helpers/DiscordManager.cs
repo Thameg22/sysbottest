@@ -20,6 +20,7 @@ namespace SysBot.Pokemon.Discord
         public RemoteControlAccessList RolesTrade => Config.RoleCanTrade;
         public RemoteControlAccessList RolesSeed => Config.RoleCanSeedCheck;
         public RemoteControlAccessList RolesDump => Config.RoleCanDump;
+        public RemoteControlAccessList RolesEgg => Config.RoleCanEgg;
         public RemoteControlAccessList RolesRemoteControl => Config.RoleRemoteControl;
 
         public bool CanUseSudo(ulong uid) => SudoDiscord.Contains(uid);
@@ -55,6 +56,7 @@ namespace SysBot.Pokemon.Discord
             nameof(RolesTrade) => RolesTrade,
             nameof(RolesSeed) => RolesSeed,
             nameof(RolesDump) => RolesDump,
+            nameof(RolesEgg) => RolesEgg,
             nameof(RolesRemoteControl) => RolesRemoteControl,
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };

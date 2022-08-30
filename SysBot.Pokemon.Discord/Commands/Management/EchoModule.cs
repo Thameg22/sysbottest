@@ -25,7 +25,22 @@ namespace SysBot.Pokemon.Discord
             }
         }
 
+        private class EchoFileChannel
+        {
+            public readonly ulong ChannelID;
+            public readonly string ChannelName;
+            public readonly Action<string, string> Action;
+
+            public EchoFileChannel(ulong channelId, string channelName, Action<string, string> action)
+            {
+                ChannelID = channelId;
+                ChannelName = channelName;
+                Action = action;
+            }
+        }
+
         private static readonly Dictionary<ulong, EchoChannel> Channels = new();
+        private static readonly Dictionary<ulong, EchoFileChannel> FileChannels = new();
 
         public static void RestoreChannels(DiscordSocketClient discord, DiscordSettings cfg)
         {
@@ -33,6 +48,12 @@ namespace SysBot.Pokemon.Discord
             {
                 if (discord.GetChannel(ch.ID) is ISocketMessageChannel c)
                     AddEchoChannel(c, ch.ID);
+            }
+
+            foreach (var ch in cfg.EchoFileChannels)
+            {
+                if (discord.GetChannel(ch.ID) is ISocketMessageChannel c)
+                    AddEchoChannel(c, ch.ID, true);
             }
 
             EchoUtil.Echo("Added echo notification to Discord channel(s) on Bot startup.");
@@ -58,14 +79,26 @@ namespace SysBot.Pokemon.Discord
             await ReplyAsync("Added Echo output to this channel!").ConfigureAwait(false);
         }
 
-        private static void AddEchoChannel(ISocketMessageChannel c, ulong cid)
+        private static void AddEchoChannel(ISocketMessageChannel c, ulong cid, bool isFile = false)
         {
-            void Echo(string msg) => c.SendMessageAsync(msg);
+            if (!isFile)
+            {
+                void Echo(string msg) => c.SendMessageAsync(msg);
 
-            Action<string> l = Echo;
-            EchoUtil.Forwarders.Add(l);
-            var entry = new EchoChannel(cid, c.Name, l);
-            Channels.Add(cid, entry);
+                Action<string> l = Echo;
+                EchoUtil.Forwarders.Add(l);
+                var entry = new EchoChannel(cid, c.Name, l);
+                Channels.Add(cid, entry);
+            }
+            else
+            {
+                void EchoFile(string msg, string file) => c.SendFileAsync(file, msg);
+
+                Action<string, string> l = EchoFile;
+                EchoUtil.FileForwarders.Add(l);
+                var entry = new EchoFileChannel(cid, c.Name, l);
+                FileChannels.Add(cid, entry);
+            }
         }
 
         public static bool IsEchoChannel(ISocketMessageChannel c)

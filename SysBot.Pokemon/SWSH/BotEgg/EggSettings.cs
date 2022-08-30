@@ -38,5 +38,9 @@ namespace SysBot.Pokemon
             if (CompletedEggs != 0)
                 yield return $"Eggs Received: {CompletedEggs}";
         }
+
+
+        public const string EggTrackerFileName = "eggs.json";
+        public EggTracker EggTracker { get; } = new EggTracker(EggTrackerFileName);
     }
 }

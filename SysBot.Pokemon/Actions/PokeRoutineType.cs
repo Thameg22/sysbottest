@@ -31,6 +31,9 @@
         /// <summary> Performs group battles as a host. </summary>
         RaidBot = 9,
 
+        /// <summary> Retrieves eggs from the Day Care with small level of interactivity. </summary>
+        InteractiveEggFetch = 10,
+
         /// <summary> Triggers encounters until the criteria is satisfied. </summary>
         EncounterLine = 1_000,
 

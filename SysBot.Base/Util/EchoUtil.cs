@@ -6,6 +6,7 @@ namespace SysBot.Base
     public static class EchoUtil
     {
         public static readonly List<Action<string>> Forwarders = new();
+        public static readonly List<Action<string, string>> FileForwarders = new();
 
         public static void Echo(string message)
         {
@@ -22,6 +23,23 @@ namespace SysBot.Base
                 }
             }
             LogUtil.LogInfo(message, "Echo");
+        }
+
+        public static void EchoFile(string message, string filePath)
+        {
+            foreach (var fwd in FileForwarders)
+            {
+                try
+                {
+                    fwd(message, filePath);
+                }
+                catch (Exception ex)
+                {
+                    LogUtil.LogInfo($"Exception: {ex} occurred while trying to echo: {message} {filePath} to the forwarder: {fwd}", "Echo");
+                    LogUtil.LogSafe(ex, "Echo");
+                }
+            }
+            LogUtil.LogInfo(message + " " + filePath, "Echo");
         }
     }
 }

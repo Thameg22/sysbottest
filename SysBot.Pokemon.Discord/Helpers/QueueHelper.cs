@@ -22,7 +22,8 @@ namespace SysBot.Pokemon.Discord
             try
             {
                 const string helper = "I've added you to the queue! I'll message you here when your trade is starting.";
-                IUserMessage test = await trader.SendMessageAsync(helper).ConfigureAwait(false);
+                const string eggHelper = "I've got your parent request! I'll message you here when I start breeding your Pokémon!";
+                IUserMessage test = await trader.SendMessageAsync(routine == PokeRoutineType.InteractiveEggFetch ? eggHelper : helper).ConfigureAwait(false);
 
                 // Try adding
                 var result = AddToTradeQueue(context, trade, code, trainer, sig, routine, type, trader, out var msg);
@@ -30,7 +31,7 @@ namespace SysBot.Pokemon.Discord
                 // Notify in channel
                 await context.Channel.SendMessageAsync(msg).ConfigureAwait(false);
                 // Notify in PM to mirror what is said in the channel.
-                await trader.SendMessageAsync($"{msg}\nYour trade code will be **{code:0000 0000}**.").ConfigureAwait(false);
+                await trader.SendMessageAsync(routine != PokeRoutineType.InteractiveEggFetch ? $"{msg}\nYour trade code will be **{code:0000 0000}**." : msg).ConfigureAwait(false);
 
                 // Clean Up
                 if (result)
@@ -85,11 +86,11 @@ namespace SysBot.Pokemon.Discord
 
             var pokeName = "";
             if (t == PokeTradeType.Specific && pk.Species != 0)
-                pokeName = $" Receiving: {(Species)pk.Species}.";
+                pokeName = $" {(type == PokeRoutineType.InteractiveEggFetch ? "Parent" : "Receiving")}: {(Species)pk.Species}.";
             msg = $"{user.Mention} - Added to the {type} queue{ticketID}. Current Position: {position.Position}.{pokeName}";
 
             var botct = Info.Hub.Bots.Count;
-            if (position.Position > botct)
+            if (position.Position > botct && type != PokeRoutineType.InteractiveEggFetch)
             {
                 var eta = Info.Hub.Config.Queues.EstimateDelay(position.Position, botct);
                 msg += $" Estimated: {eta:F1} minutes.";

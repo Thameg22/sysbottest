@@ -12,7 +12,6 @@ namespace SysBot.Pokemon
         private readonly PokeTradeQueue<T> Seed = new(PokeTradeType.Seed);
         private readonly PokeTradeQueue<T> Clone = new(PokeTradeType.Clone);
         private readonly PokeTradeQueue<T> Dump = new(PokeTradeType.Dump);
-        private readonly PokeTradeQueue<T> Egg = new(PokeTradeType.Specific);
         public readonly TradeQueueInfo<T> Info;
         public readonly PokeTradeQueue<T>[] AllQueues;
 
@@ -31,7 +30,6 @@ namespace SysBot.Pokemon
             PokeRoutineType.SeedCheck => Seed,
             PokeRoutineType.Clone => Clone,
             PokeRoutineType.Dump => Dump,
-            PokeRoutineType.InteractiveEggFetch => Egg,
             _ => Trade,
         };
 

@@ -49,6 +49,8 @@ namespace SysBot.Pokemon.Discord
         public void TradeFinished(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result)
         {
             OnFinish?.Invoke(routine);
+            if (Code == 0)
+                return;
             var tradedToUser = Data.Species;
             var message = tradedToUser != 0 ? $"Trade finished. Enjoy your {(Species)tradedToUser}!" : "Trade finished!";
             Trader.SendMessageAsync(message).ConfigureAwait(false);

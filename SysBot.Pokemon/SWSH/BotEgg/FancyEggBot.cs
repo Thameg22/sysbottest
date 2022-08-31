@@ -95,6 +95,7 @@ namespace SysBot.Pokemon
             {
                 Log("Skipped!");
                 SkipRequested = false;
+                CurrentSet.TradeFinished(this, Blank);
                 await SetupDaycare(token).ConfigureAwait(false);
                 return true;
             }
@@ -105,6 +106,7 @@ namespace SysBot.Pokemon
                 var msgFail = $"Trainer <@{CurrentSet.Trainer.ID}> ({CurrentSet.Trainer.TrainerName}) unfortunately failed to provide a Pokémon that would breed.";
                 Log(msgFail);
                 CurrentSet.SendNotification(this, "Unfortunately your requested parent failed to breed. Your parent request has been removed.");
+                CurrentSet.TradeFinished(this, Blank);
                 EchoUtil.Echo(msgFail);
                 await SetupDaycare(token).ConfigureAwait(false);
                 return true;
@@ -173,6 +175,7 @@ namespace SysBot.Pokemon
                 return false;
             if (mode == ContinueAfterMatch.Continue)
             {
+                CurrentSet.TradeFinished(this, Blank);
                 await SetupDaycare(token).ConfigureAwait(false);
                 return true;
             }

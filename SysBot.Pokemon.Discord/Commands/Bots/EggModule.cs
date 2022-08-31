@@ -106,7 +106,7 @@ namespace SysBot.Pokemon.Discord
         public async Task GetStatsAsync()
         {
             var track = Info.Hub.Config.Egg.EggTracker;
-            var msg = $"Eggs received: **{track.EggStats.EggsReceived}**\r\nEggs that matched criteria: **{track.EggStats.MatchesObtained}**\r\nRate: **1/{track.EggStats.MatchesObtained / track.EggStats.EggsReceived}**";
+            var msg = $"Eggs received: **{track.EggStats.EggsReceived}**\r\nEggs that matched criteria: **{track.EggStats.MatchesObtained}**\r\nRate: **1/{track.EggStats.EggsReceived / track.EggStats.MatchesObtained}**";
             var embed = new EmbedBuilder();
             embed.AddField(x =>
             {

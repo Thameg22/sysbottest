@@ -11,8 +11,8 @@ namespace SysBot.Pokemon
         [Serializable]
         public class EggStatistics
         {
-            public ulong EggsReceived { get; set; }
-            public ulong MatchesObtained { get; set; }
+            public int EggsReceived { get; set; }
+            public int MatchesObtained { get; set; }
             public Dictionary<string, string> MatchLog { get; set; } = new();
 
             public EggStatistics() { }

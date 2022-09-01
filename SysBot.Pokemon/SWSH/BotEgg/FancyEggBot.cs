@@ -20,7 +20,7 @@ namespace SysBot.Pokemon
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
         private readonly EggSettings Settings;
-        private EggTracker Tracker => Settings.EggTracker;
+        private EggTracker Tracker => Settings.GetEggTracker();
 
         public ICountSettings Counts => Settings;
 

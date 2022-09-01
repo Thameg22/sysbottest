@@ -41,6 +41,7 @@ namespace SysBot.Pokemon
 
 
         public const string EggTrackerFileName = "eggstats.json";
-        public EggTracker EggTracker { get; } = new EggTracker(EggTrackerFileName);
+        private readonly EggTracker eggTracker = new EggTracker(EggTrackerFileName);
+        public EggTracker GetEggTracker() => eggTracker;
     }
 }

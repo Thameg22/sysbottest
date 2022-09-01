@@ -105,7 +105,7 @@ namespace SysBot.Pokemon.Discord
         [RequireSudo]
         public async Task GetStatsAsync()
         {
-            var track = Info.Hub.Config.Egg.EggTracker;
+            var track = Info.Hub.Config.Egg.GetEggTracker();
             var msg = $"Eggs received: **{track.EggStats.EggsReceived}**\r\nEggs that matched criteria: **{track.EggStats.MatchesObtained}**";
             if (track.EggStats.MatchesObtained > 0) // Do not divide by zero
                 msg += $"\r\nRate: **1/{track.EggStats.EggsReceived / track.EggStats.MatchesObtained}**";

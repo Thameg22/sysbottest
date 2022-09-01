@@ -4,7 +4,6 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
 
 namespace SysBot.Pokemon
 {

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 
@@ -9,13 +11,58 @@ namespace SysBot.Pokemon
     public class EggTracker
     {
         [Serializable]
+        public class EggCollectionEntry
+        {
+            public string CollectionDate { get; set; } = string.Empty;
+            public string FileName { get; set; } = string.Empty;
+            public int Attempts { get; set; } = 0;
+            public string Seed { get; set; } = string.Empty;
+            public string ShowDownSet { get; set; } = string.Empty;
+            public string User { get; set; } = string.Empty;
+
+            public EggCollectionEntry() { }
+
+            public EggCollectionEntry(string collectionDate, string fileName, int attempts, string seed, string showDownSet, string user)
+            {
+                CollectionDate = collectionDate;
+                FileName = fileName;
+                Attempts = attempts;
+                Seed = seed;
+                ShowDownSet = showDownSet;
+                User = user;
+            }
+
+            public override string ToString()
+            {
+                var sb = new StringBuilder();
+                var date = DateTime.Parse(CollectionDate, CultureInfo.InvariantCulture);
+                sb.AppendLine($"[{ShowDownSet.Split('\n')[0]}]");
+                sb.AppendLine($"Received: {date:D} at {date:t}");
+                sb.AppendLine($"Requester: {User}");
+                sb.AppendLine($"Attempts: {Attempts}");
+                sb.AppendLine(string.Empty);
+                sb.AppendLine($"Seed: {Seed}");
+                sb.AppendLine($"FileName: {FileName}");
+
+                return sb.ToString();
+            }
+        }
+
+        [Serializable]
         public class EggStatistics
         {
             public int EggsReceived { get; set; }
             public int MatchesObtained { get; set; }
-            public Dictionary<string, string> MatchLog { get; set; } = new();
+            public List<EggCollectionEntry> MatchLog { get; set; } = new();
 
             public EggStatistics() { }
+
+            public EggStatistics(int eggsReceived, int matchesObtained, List<EggCollectionEntry> matchLog)
+            {
+                EggsReceived = eggsReceived;
+                MatchesObtained = matchesObtained;
+                MatchLog = matchLog;
+            }
         }
 
         public readonly EggStatistics EggStats;
@@ -31,7 +78,10 @@ namespace SysBot.Pokemon
                 lock (_sync)
                 {
                     EggStats = new EggStatistics();
-                    var json = JsonSerializer.Serialize(EggStats);
+                    var json = JsonSerializer.Serialize(EggStats, new JsonSerializerOptions()
+                    {
+                        WriteIndented = true,
+                    });
                     File.WriteAllText(path, json);
                     return;
                 }
@@ -57,10 +107,10 @@ namespace SysBot.Pokemon
                 EggStats.MatchesObtained++;
         }
 
-        public void AddMatch(string date, string pokeform)
+        public void AddMatch(EggCollectionEntry collection)
         {
             lock (_syncVars)
-                EggStats.MatchLog.Add(date, pokeform);
+                EggStats.MatchLog.Add(collection);
         }
 
         public void Save(string path)

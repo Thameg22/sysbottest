@@ -106,7 +106,13 @@ namespace SysBot.Pokemon.Discord
         public async Task GetStatsAsync()
         {
             var track = Info.Hub.Config.Egg.EggTracker;
-            var msg = $"Eggs received: **{track.EggStats.EggsReceived}**\r\nEggs that matched criteria: **{track.EggStats.MatchesObtained}**\r\nRate: **1/{track.EggStats.EggsReceived / track.EggStats.MatchesObtained}**";
+            var msg = $"Eggs received: **{track.EggStats.EggsReceived}**\r\nEggs that matched criteria: **{track.EggStats.MatchesObtained}**";
+            if (track.EggStats.MatchesObtained > 0) // Do not divide by zero
+                msg += $"\r\nRate: **1/{track.EggStats.EggsReceived / track.EggStats.MatchesObtained}**";
+
+            if (track.EggStats.MatchLog.Count > 0)
+                msg += $"\r\n\r\nLatest Egg:\r\n{track.EggStats.MatchLog.Last()}";
+
             var embed = new EmbedBuilder();
             embed.AddField(x =>
             {

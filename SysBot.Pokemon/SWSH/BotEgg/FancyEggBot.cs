@@ -8,6 +8,7 @@ using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
 using static System.Buffers.Binary.BinaryPrimitives;
+using System.Globalization;
 
 namespace SysBot.Pokemon
 {
@@ -34,7 +35,6 @@ namespace SysBot.Pokemon
             StopConditionSettings.InitializeTargetIVs(Hub.Config, out DesiredMinIVs, out DesiredMaxIVs);
         }
 
-        private int encounterCount;
         private int currentEncounterCount;
 
         private const int InjectBox = 0;
@@ -63,6 +63,9 @@ namespace SysBot.Pokemon
                 {
                     if (!await InnerLoop(token).ConfigureAwait(false))
                         break;
+
+                    while (CurrentSet == default(PokeTradeDetail<PK8>))
+                        await SetupDaycare(token).ConfigureAwait(false);
                 }
 #pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
@@ -167,7 +170,7 @@ namespace SysBot.Pokemon
             Log(msg);
 
             // Update stats
-            Tracker.AddMatch(DateTime.UtcNow.ToString("o"), ShowdownParsing.GetShowdownText(pk).Split('\n')[0] + "-" + Util.CleanFileName(pk.FileName));
+            Tracker.AddMatch(new(DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture), Util.CleanFileName(pk.FileName), currentEncounterCount, seed.ToString("X16"), ShowdownParsing.GetShowdownText(pk), $"{CurrentSet.Trainer.TrainerName}-{CurrentSet.Trainer.ID}"));
             Tracker.IncrementMatches();
             Tracker.Save(EggSettings.EggTrackerFileName);
 
@@ -208,6 +211,8 @@ namespace SysBot.Pokemon
 
         private async Task<PokeTradeDetail<PK8>?> SetupDaycare(CancellationToken token)
         {
+            CurrentSet = default!;
+
             (var detail, var prio) = GetTradeData(PokeRoutineType.InteractiveEggFetch);
             if (detail == null || !BreedingLegality.CanBreed(detail.TradeData.Species, detail.TradeData.Form))
             {
@@ -240,6 +245,7 @@ namespace SysBot.Pokemon
 
             CurrentSet = detail;
             CurrentSet.SendNotification(this, $"I'm starting your breed request! {msg}");
+            CurrentSet.IsProcessing = true;
 
             currentEncounterCount = 0;
 

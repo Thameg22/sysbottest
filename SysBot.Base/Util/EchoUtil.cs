@@ -39,7 +39,6 @@ namespace SysBot.Base
                     LogUtil.LogSafe(ex, "Echo");
                 }
             }
-            LogUtil.LogInfo(message + " " + filePath, "Echo");
         }
     }
 }

@@ -110,8 +110,13 @@ namespace SysBot.Pokemon.Discord
             if (track.EggStats.MatchesObtained > 0) // Do not divide by zero
                 msg += $"\r\nRate: **1/{track.EggStats.EggsReceived / track.EggStats.MatchesObtained}**";
 
-            if (track.EggStats.MatchLog.Count > 0)
-                msg += $"\r\n\r\nLatest Egg:\r\n{track.EggStats.MatchLog.Last()}";
+            var latest = track.EggStats.GetLatest();
+            if (latest != null)
+                msg += $"\r\n\r\n__Latest Egg__:\r\n{latest}";
+
+            (var least, var most) = track.EggStats.GetLeastMostAttempts();
+            if (least != null && most != null)
+                msg += $"\r\n\r\n__Fastest egg__:\r\n{least}" + $"\r\n\r\n__Slowest egg__:\r\n{least}";
 
             var embed = new EmbedBuilder();
             embed.AddField(x =>

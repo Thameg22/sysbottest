@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 
@@ -62,6 +63,22 @@ namespace SysBot.Pokemon
                 MatchesObtained = matchesObtained;
                 MatchLog = matchLog;
             }
+
+            public EggCollectionEntry? GetLatest()
+            {
+                if (MatchLog.Count == 0)
+                    return null;
+                return MatchLog.Last();
+            }
+
+            public (EggCollectionEntry?, EggCollectionEntry?) GetLeastMostAttempts()
+            {
+                if (MatchLog.Count == 0)
+                    return (null, null);
+
+                var ordered = MatchLog.OrderBy(x => x.Attempts);
+                return (MatchLog.First(), MatchLog.Last());
+            }
         }
 
         public readonly EggStatistics EggStats;
@@ -116,7 +133,10 @@ namespace SysBot.Pokemon
         {
             lock(_sync)
             {
-                var json = JsonSerializer.Serialize(EggStats);
+                var json = JsonSerializer.Serialize(EggStats, new JsonSerializerOptions()
+                {
+                    WriteIndented = true,
+                });
                 File.WriteAllText(path, json);
             }
         }

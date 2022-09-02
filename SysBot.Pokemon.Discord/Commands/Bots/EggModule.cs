@@ -73,14 +73,34 @@ namespace SysBot.Pokemon.Discord
             await EggAsyncAttach(sig, Context.User).ConfigureAwait(false);
         }
 
-        /*[Command("setEggSeed")]
+        [Command("setEggSeed")]
         [Alias("eggSeed")]
         [Summary("Sets the current egg seed.")]
         [RequireSudo]
-        public async Task SetEggSeed()
+        public async Task SetEggSeed(string ip, string seed)
         {
+            var bot = SysCord<T>.Runner.GetBot(ip);
+            if (bot == null)
+            {
+                await ReplyAsync($"No bot is available to set seed.").ConfigureAwait(false);
+                return;
+            }
 
-        }*/
+            if (bot.Bot is not FancyEggBot feb)
+            {
+                await ReplyAsync($"{ip} is not an interactive egg bot.").ConfigureAwait(false);
+                return;
+            }
+
+            if (!ulong.TryParse(seed, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var res))
+            {
+                await ReplyAsync($"{seed} is not a valid 64-bit hexadecimal seed.").ConfigureAwait(false);
+                return;
+            }
+
+            await feb.WriteSeed(res, System.Threading.CancellationToken.None);
+            await ReplyAsync($"Your seed is now set to {seed}, please note that eggs are no longer legitimate (EC will always match, HOME will flag). You should only use this for testing.\r\nSeed injection will only be valid at the start of the dialogue with the daycare lady.\r\nRestart your game for a new valid seed.").ConfigureAwait(false);
+        }
 
 
         [Command("eggList")]
@@ -112,7 +132,7 @@ namespace SysBot.Pokemon.Discord
 
             var latest = track.EggStats.GetLatest();
             if (latest != null)
-                msg += $"\r\n\r\n__Latest Egg__:\r\n{latest}";
+                msg += $"\r\n\r\n__Most recent egg__:\r\n{latest}";
 
             (var least, var most) = track.EggStats.GetLeastMostAttempts();
             if (least != null && most != null)

@@ -326,6 +326,13 @@ namespace SysBot.Pokemon
             return ReadUInt64LittleEndian(data);
         }
 
+        public async Task WriteSeed(ulong seed, CancellationToken token)
+        {
+            var data = new byte[8];
+            WriteUInt64LittleEndian(data, seed);
+            await Connection.WriteBytesAsync(data, DayCare_Start + DayCareStructure.DAYCARE_MAIN_SIZE + 0x6, token);
+        }
+
         public PK8? FetchClosestDitto(PK8 match)
         {
             var dittos = Hub.Ledy.Pool.Where(p => p.Species == 132);

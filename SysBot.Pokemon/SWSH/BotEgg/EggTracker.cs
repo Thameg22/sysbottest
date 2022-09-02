@@ -37,10 +37,9 @@ namespace SysBot.Pokemon
                 var sb = new StringBuilder();
                 var date = DateTime.Parse(CollectionDate, CultureInfo.InvariantCulture);
                 sb.AppendLine($"[{ShowDownSet.Split('\n')[0]}]");
-                sb.AppendLine($"Received: {date:D} at {date:t}");
+                sb.AppendLine($"Received: {date:D} at {date:t} (UTC)");
                 sb.AppendLine($"Requester: {User}");
                 sb.AppendLine($"Attempts: {Attempts}");
-                sb.AppendLine(string.Empty);
                 sb.AppendLine($"Seed: {Seed}");
                 sb.AppendLine($"FileName: {FileName}");
 

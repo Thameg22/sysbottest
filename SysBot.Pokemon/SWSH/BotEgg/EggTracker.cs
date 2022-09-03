@@ -76,7 +76,7 @@ namespace SysBot.Pokemon
                     return (null, null);
 
                 var ordered = MatchLog.OrderBy(x => x.Attempts);
-                return (MatchLog.First(), MatchLog.Last());
+                return (ordered.First(), ordered.Last());
             }
         }
 

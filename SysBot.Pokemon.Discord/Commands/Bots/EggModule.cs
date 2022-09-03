@@ -136,7 +136,7 @@ namespace SysBot.Pokemon.Discord
 
             (var least, var most) = track.EggStats.GetLeastMostAttempts();
             if (least != null && most != null)
-                msg += $"\r\n\r\n__Fastest egg__:\r\n{least}" + $"\r\n\r\n__Slowest egg__:\r\n{least}";
+                msg += $"\r\n\r\n__Fastest egg__:\r\n{least}" + $"\r\n\r\n__Slowest egg__:\r\n{most}";
 
             var embed = new EmbedBuilder();
             embed.AddField(x =>

@@ -9,6 +9,8 @@ using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
 using static System.Buffers.Binary.BinaryPrimitives;
 using System.Globalization;
+using System.Collections.Generic;
+using System.IO;
 
 namespace SysBot.Pokemon
 {
@@ -26,6 +28,7 @@ namespace SysBot.Pokemon
 
         public DayCareStructure DayCare { get; private set; } = default!;
         public PokeTradeDetail<PK8> CurrentSet { get; private set; } = default!;
+        public SAV8SWSH CurrentSave { get; private set; } = default!;
 
         public FancyEggBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
@@ -36,9 +39,11 @@ namespace SysBot.Pokemon
         }
 
         private int currentEncounterCount;
+        private int partySlotEgg;
 
         private const int InjectBox = 0;
         private const int InjectSlot = 0;
+        private const int PartySizeRequired = 6;
 
         private static readonly PK8 Blank = new();
 
@@ -47,13 +52,10 @@ namespace SysBot.Pokemon
             await InitializeHardware(Hub.Config.Egg, token).ConfigureAwait(false);
 
             Log("Identifying trainer data of the host console.");
-            await IdentifyTrainer(token).ConfigureAwait(false);
+            CurrentSave = await IdentifyTrainer(token).ConfigureAwait(false);
 
-            await SetupBoxState(token).ConfigureAwait(false);
-            while (await SetupDaycare(token).ConfigureAwait(false) == null)
-            {
-
-            }
+            await SetupBoxAndPartyState(token).ConfigureAwait(false);
+            while (await SetupDaycare(token).ConfigureAwait(false) == null) { }
 
             Log("Starting main FancyEggBot loop.");
             Config.IterateNextRoutine();
@@ -143,6 +145,8 @@ namespace SysBot.Pokemon
             if (Tracker.EggStats.EggsReceived % 10 == 0)
                 Tracker.Save(EggSettings.EggTrackerFileName);
 
+            WriteToFile(pk, currentEncounterCount);
+
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
                 return true;
 
@@ -174,6 +178,10 @@ namespace SysBot.Pokemon
             Tracker.IncrementMatches();
             Tracker.Save(EggSettings.EggTrackerFileName);
 
+            // Hatch if requested
+            if (Settings.InteractiveBotShowEggHatchVisual)
+                await HatchEgg(pk, token).ConfigureAwait(false);
+
             if (mode == ContinueAfterMatch.StopExit)
                 return false;
             if (mode == ContinueAfterMatch.Continue)
@@ -189,7 +197,7 @@ namespace SysBot.Pokemon
             return false;
         }
 
-        private async Task SetupBoxState(CancellationToken token)
+        private async Task SetupBoxAndPartyState(CancellationToken token)
         {
             await SetCurrentBox(0, token).ConfigureAwait(false);
 
@@ -207,6 +215,21 @@ namespace SysBot.Pokemon
             var daycareData = await Connection.ReadBytesAsync(DayCare_Start, DayCareStructure.DAYCARE_MAIN_SIZE, token).ConfigureAwait(false);
             DayCare = new DayCareStructure(daycareData);
             Log(DayCare.GetSummary());
+
+            if (Settings.InteractiveBotShowEggHatchVisual)
+            {
+                var party = await FetchParty(token).ConfigureAwait(false);
+                partySlotEgg = party.Length;
+                if (partySlotEgg < PartySizeRequired)
+                    Log($"Your party needs to have {PartySizeRequired} to use the egg hatching visual functionality, otherwise your empty slots will corrupt.");
+
+                existing = new PK8(await SwitchConnection.PointerPeek(BoxFormatSlotSize, PartySlotPointers[partySlotEgg - 1], token).ConfigureAwait(false));
+                if (existing.Species != 0 && existing.ChecksumValid)
+                {
+                    Log("Dumping the Pokémon found at destination party slot...");
+                    DumpPokemon(DumpSetting.DumpFolder, "saved", existing);
+                }
+            }
         }
 
         private async Task<PokeTradeDetail<PK8>?> SetupDaycare(CancellationToken token)
@@ -304,6 +327,59 @@ namespace SysBot.Pokemon
             return -1; // aborted
         }
 
+        private async Task HatchEgg(PK8 egg, CancellationToken token)
+        {
+            if (!Settings.InteractiveBotShowEggHatchVisual || partySlotEgg < PartySizeRequired)
+            {
+                Log("Bot is not set up for egg hatching, skipping...");
+                return;
+            }
+
+            if (!egg.IsEgg)
+            {
+                Log(Util.CleanFileName(egg.FileName) + " is not an egg, skipping...");
+                return;
+            }
+
+            Log("Hatching egg...");
+
+            egg.CurrentFriendship = 0; // Hatch counter
+
+            // EC matching gives us the visual, party will still corrupt.
+            var ecb = await SwitchConnection.PointerPeek(4, PartySlotPointers[partySlotEgg - 1], token).ConfigureAwait(false);
+            var ec = BitConverter.ToUInt32(ecb, 0);
+            egg.EncryptionConstant = ec;
+            egg.RefreshChecksum();
+            egg.ForcePartyData();
+
+            // Inject the egg
+            await SwitchConnection.PointerPoke(egg.EncryptedPartyData, PartySlotPointers[partySlotEgg - 1], token).ConfigureAwait(false);
+
+            await SetStick(LEFT, -19000, 19000, 0_500, token).ConfigureAwait(false);
+            await SetStick(LEFT, 0, 0, 500, token).ConfigureAwait(false); // reset
+
+            // oh?
+            await Click(A, 18_000, token).ConfigureAwait(false);
+
+            while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                await Click(B, 0_500, token).ConfigureAwait(false);
+
+            await SetStick(LEFT, 19000, 19000, 0_400, token).ConfigureAwait(false);
+            await SetStick(LEFT, 0, 0, 500, token).ConfigureAwait(false); // reset
+        }
+
+        private async Task<PK8[]> FetchParty(CancellationToken token)
+        {
+            var partySlots = new List<PK8>();
+            var partyCount = (await SwitchConnection.PointerPeek(1, PartySizePointer, token).ConfigureAwait(false))[0];
+            for (int i = 0; i < partyCount; i++)
+            {
+                partySlots.Add(new PK8(await SwitchConnection.PointerPeek(BoxFormatSlotSize, PartySlotPointers[i], token).ConfigureAwait(false)));
+            }
+
+            return partySlots.ToArray();
+        }
+
         public async Task<bool> IsEggReady(CancellationToken token)
         {
             // Read a single byte of the Daycare metadata to check the IsEggReady flag.
@@ -359,6 +435,26 @@ namespace SysBot.Pokemon
             for (int i = 0; i < pk1.IVs.Length; ++i)
                 distance += Math.Abs(pk1.IVs[i] - pk2.IVs[i]);
             return distance;
+        }
+
+        private void WriteToFile(PK8 pk, int numAttempts)
+        {
+            try
+            {
+                var fileName = Connection.Label + "_egg.txt";
+                var name = ShowdownParsing.GetShowdownText(pk).Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)[0];
+
+                // Clean
+                name = name.Replace("(M)", string.Empty).Replace("(F)", string.Empty).Replace("Egg", string.Empty).Replace("(", string.Empty).Replace(")", string.Empty).TrimStart().TrimEnd();
+
+                var text = $"Desired: {name}\r\nAttempt: {numAttempts}";
+
+                File.WriteAllText(fileName, text);
+            }
+            catch (Exception e)
+            {
+                LogUtil.LogError($"Failed to write egg file: {e.Message}", nameof(FancyEggBot));
+            }
         }
     }
 }

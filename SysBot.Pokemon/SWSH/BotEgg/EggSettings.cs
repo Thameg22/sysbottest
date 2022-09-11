@@ -29,6 +29,9 @@ namespace SysBot.Pokemon
         [Category(Counts), Description("When enabled, the counts will be emitted when a status check is requested.")]
         public bool EmitCountsOnStatusCheck { get; set; }
 
+        [Category(FeatureToggle), Description("When enabled, egg is injected to next available party slot (or last slot is overwritten) and egg is hatched for the visual.")]
+        public bool InteractiveBotShowEggHatchVisual { get; set; }
+
         public int AddCompletedEggs() => Interlocked.Increment(ref _completedEggs);
 
         public IEnumerable<string> GetNonZeroCounts()

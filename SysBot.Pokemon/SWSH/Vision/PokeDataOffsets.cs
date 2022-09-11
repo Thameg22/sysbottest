@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace SysBot.Pokemon
 {
@@ -95,6 +96,19 @@ namespace SysBot.Pokemon
         public const uint CurrentScreen_Box2 = 0xFF000000;
 
         public const uint CurrentScreen_Softban = 0xFF000000;
+        #endregion
+
+        #region Pointers
+        private const long PlayerPartyStructureStart = 0x378;
+        public static IReadOnlyList<long> PartySlot1Pointer { get; } = new long[] { 0x28ED6C8, PlayerPartyStructureStart, 0x58, 0x00 };
+        public static IReadOnlyList<long> PartySlot2Pointer { get; } = new long[] { 0x28ED6C8, PlayerPartyStructureStart + 0x8, 0x58, 0x00 };
+        public static IReadOnlyList<long> PartySlot3Pointer { get; } = new long[] { 0x28ED6C8, PlayerPartyStructureStart + 0x10, 0x58, 0x00 };
+        public static IReadOnlyList<long> PartySlot4Pointer { get; } = new long[] { 0x28ED6C8, PlayerPartyStructureStart + 0x18, 0x58, 0x00 };
+        public static IReadOnlyList<long> PartySlot5Pointer { get; } = new long[] { 0x28ED6C8, PlayerPartyStructureStart + 0x20, 0x58, 0x00 };
+        public static IReadOnlyList<long> PartySlot6Pointer { get; } = new long[] { 0x28ED6C8, PlayerPartyStructureStart + 0x28, 0x58, 0x00 };
+        public static IReadOnlyList<long> PartySizePointer { get; } = new long[] { 0x28ED6C8, PlayerPartyStructureStart + 0x30 }; // byte
+
+        public static readonly IReadOnlyList<IReadOnlyList<long>> PartySlotPointers = new List<IReadOnlyList<long>>() { PartySlot1Pointer, PartySlot2Pointer, PartySlot3Pointer, PartySlot4Pointer, PartySlot5Pointer, PartySlot6Pointer };
         #endregion
 
         public static uint GetTrainerNameOffset(TradeMethod tradeMethod) => tradeMethod switch
